@@ -60,6 +60,10 @@ If you find a mod it doesn't get along with, let me know and I'll have a look.
 
 Everything's on GitHub, including the tests and build scripts: https://github.com/wolvyreen/Valheim/tree/main/WolvysCrossBeams (MIT licence). Bug reports are welcome there under Issues.
 
+## Thanks
+
+Thanks to shudnal for Configuration Manager and to the BepInEx team for ScriptEngine. Being able to flip settings in game and reload the mod without restarting Valheim made testing this so much quicker. And thanks to denikson for BepInExPack Valheim, which every Valheim mod relies on.
+
 ## How this was made
 
 I made this mod with Claude, Anthropic's AI. I ran into the problem while building, worked out what I wanted and tested it in game. Claude dug through the game code to find out why the snap was being refused, and wrote the code and most of the text.
