@@ -1,4 +1,4 @@
-# Wolvy's Cross Beams
+# Wolvy's Cross Beams - Snapping Fix for X Beams
 
 *By Wolvyreen(With_ClaudeAI)*
 
