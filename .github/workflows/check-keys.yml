@@ -1,0 +1,34 @@
+# Checks that the THUNDERSTORE_TOKEN and NEXUS_API_KEY secrets work, without uploading anything.
+# Run it from the Actions tab (Check publishing keys > Run workflow).
+name: Check publishing keys
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Nexus Mods key
+        env:
+          KEY: ${{ secrets.NEXUS_API_KEY }}
+        run: |
+          [ -n "$KEY" ] || { echo "::error::NEXUS_API_KEY is not set"; exit 1; }
+          code=$(curl -s -o r.json -w '%{http_code}' -H "apikey: $KEY" -H "Accept: application/json" https://api.nexusmods.com/v1/users/validate.json)
+          [ "$code" = "200" ] || { echo "::error::Nexus rejected the key (HTTP $code)"; exit 1; }
+          echo "Nexus key works for user: $(jq -r .name r.json)"
+      - name: Thunderstore token
+        env:
+          TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::THUNDERSTORE_TOKEN is not set"; exit 1; }
+          code=$(curl -s -o r.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" https://thunderstore.io/api/experimental/current-user/)
+          echo "Thunderstore answered HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "Token accepted. Teams: $(jq -r '[.teams[]?.name // .teams[]?] | join(", ")' r.json 2>/dev/null)"
+          else
+            echo "::warning::Thunderstore didn't accept the token on this check (HTTP $code). Service account tokens may only work for uploads; the first real upload will tell for sure."
+          fi
