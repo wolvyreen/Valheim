@@ -6,6 +6,10 @@ Ever tried to brace a wall with two angled beams in an X? The first one goes on 
 
 This mod fixes that. Put up your first 26° or 45° beam, then snap a second beam of the same kind across it, and it clicks into place like it should.
 
+![Vanilla refuses to snap the second beam](https://raw.githubusercontent.com/wolvyreen/Valheim/main/WolvysCrossBeams/images/vanilla-refuses.jpg)
+
+![With Wolvy's Cross Beams the second beam snaps into the X](https://raw.githubusercontent.com/wolvyreen/Valheim/main/WolvysCrossBeams/images/with-cross-beams.jpg)
+
 ## Why the game won't let you
 
 Valheim has a little safety check to stop you double-clicking and dropping a second piece hidden inside the first one. If the same piece is already sitting within 5 cm of where the new one would go, the game cancels the snap.
