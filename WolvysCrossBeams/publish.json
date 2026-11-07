@@ -3,11 +3,18 @@
     "team": "Wolvyreen",
     "package": "Wolvys_Cross_Beams",
     "community": "valheim",
-    "categories": ["AI Generated", "Building", "Tweaks", "Client-side", "Mods", "Deep North Update"]
+    "categories": [
+      "AI Generated",
+      "Building",
+      "Tweaks",
+      "Client-side",
+      "Mods",
+      "Deep North Update"
+    ]
   },
   "nexus": {
     "mod_id": 4876,
-    "file_id": null,
+    "file_id": 8330925,
     "display_name": "Wolvys Cross Beams",
     "file_description": "Use Mod Manager Download, or extract the zip into your Valheim folder (the one with valheim.exe). Needs BepInEx for Valheim."
   }
