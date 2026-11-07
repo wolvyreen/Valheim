@@ -35,3 +35,7 @@ I make these with Claude. I come up with the idea, spot the problems and test ev
 ## Licence
 
 [MIT](LICENSE). Use them, change them and share them, just keep the copyright notice with them.
+
+## How releases get published
+
+New versions are published by a GitHub workflow (`.github/workflows/publish-mod.yml`). When a release tagged `<ModFolder>-v<version>` is published here with the mod's Thunderstore and Nexus zips attached, it uploads them to Thunderstore and Nexus Mods. Each mod's `publish.json` holds its store settings.

@@ -1,0 +1,135 @@
+# Publishes one mod to Thunderstore and Nexus Mods when a GitHub release is published.
+#
+# Release tag:   <ModFolder>-v<version>        e.g. WolvysCrossBeams-v1.0.1
+# Release files: <Package>-<version>-Thunderstore.zip and <Package>-<version>-Nexus.zip
+#                e.g. Wolvys_Cross_Beams-1.0.1-Thunderstore.zip / -Nexus.zip
+# Release notes: become the Nexus changelog (one line per entry).
+# Settings per mod: <ModFolder>/publish.json
+# Secrets (repo Settings > Secrets and variables > Actions):
+#   THUNDERSTORE_TOKEN  service account token of the Thunderstore team
+#   NEXUS_API_KEY       Nexus Mods API key
+#
+# Run it by hand (Actions tab > Publish mod > Run workflow) with "dry run" on to check a release
+# without uploading anything.
+
+name: Publish mod
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. WolvysCrossBeams-v1.0.1)
+        required: true
+      dry_run:
+        description: Only check the release, don't upload anything
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the release
+        id: info
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^([A-Za-z0-9_]+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]] || { echo "::error::Tag '$TAG' must look like ModFolder-v1.2.3"; exit 1; }
+          MOD="${BASH_REMATCH[1]}"; VERSION="${BASH_REMATCH[2]}"
+          CFG="$MOD/publish.json"; [ -f "$CFG" ] || { echo "::error::$CFG not found"; exit 1; }
+          PACKAGE=$(jq -r .thunderstore.package "$CFG")
+          mkdir -p dist
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "*.zip" -D dist
+          TS="dist/$PACKAGE-$VERSION-Thunderstore.zip"; NX="dist/$PACKAGE-$VERSION-Nexus.zip"
+          for f in "$TS" "$NX"; do [ -f "$f" ] || { echo "::error::Release is missing $(basename "$f")"; exit 1; }; done
+          # The Thunderstore manifest must say the same version as the tag
+          MV=$(unzip -p "$TS" manifest.json | jq -r .version_number)
+          [ "$MV" = "$VERSION" ] || { echo "::error::manifest.json says $MV, tag says $VERSION"; exit 1; }
+          # Both zips must carry the same DLL
+          A=$(unzip -p "$TS" "plugins/$MOD.dll" | md5sum | cut -d' ' -f1)
+          B=$(unzip -p "$NX" "BepInEx/plugins/$MOD/$MOD.dll" | md5sum | cut -d' ' -f1)
+          [ -n "$A" ] && [ "$A" = "$B" ] || { echo "::error::The DLLs in the two zips differ ($A / $B)"; exit 1; }
+          echo "DLL MD5 $A"
+          {
+            echo "mod=$MOD"; echo "version=$VERSION"; echo "package=$PACKAGE"; echo "ts_zip=$TS"; echo "nx_zip=$NX"
+            echo "team=$(jq -r .thunderstore.team "$CFG")"; echo "community=$(jq -r .thunderstore.community "$CFG")"
+            echo "nexus_mod_id=$(jq -r .nexus.mod_id "$CFG")"; echo "nexus_file_id=$(jq -r '.nexus.file_id // empty' "$CFG")"
+            echo "nexus_name=$(jq -r .nexus.display_name "$CFG")"; echo "nexus_desc=$(jq -r .nexus.file_description "$CFG")"
+          } >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .body > notes.txt || true
+          { echo 'notes<<NOTES_EOF'; cat notes.txt; echo; echo 'NOTES_EOF'; } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare the Thunderstore upload
+        run: |
+          set -euo pipefail
+          CFG="${{ steps.info.outputs.mod }}/publish.json"; COMMUNITY="${{ steps.info.outputs.community }}"
+          # Look up the category slugs from their names, so the names in publish.json match the website
+          URL="https://thunderstore.io/api/experimental/community/$COMMUNITY/category/"; : > cats.json
+          while [ -n "$URL" ] && [ "$URL" != "null" ]; do
+            curl -fsS "$URL" -o page.json; jq -c '.results[]' page.json >> cats.json; URL=$(jq -r .pagination.next_link page.json)
+          done
+          SLUGS=()
+          while IFS= read -r NAME; do
+            S=$(jq -r --arg n "$NAME" 'select((.name|ascii_downcase)==($n|ascii_downcase)) | .slug' cats.json | head -1)
+            [ -n "$S" ] || { echo "::error::Thunderstore category '$NAME' not found"; exit 1; }
+            SLUGS+=("\"$S\"")
+          done < <(jq -r '.thunderstore.categories[]' "$CFG")
+          M=$(unzip -p "${{ steps.info.outputs.ts_zip }}" manifest.json)
+          {
+            echo '[config]'; echo 'schemaVersion = "0.0.1"'; echo
+            echo '[package]'
+            echo "namespace = \"${{ steps.info.outputs.team }}\""
+            echo "name = $(jq '.name' <<<"$M")"
+            echo "versionNumber = $(jq '.version_number' <<<"$M")"
+            echo "description = $(jq '.description' <<<"$M")"
+            echo "websiteUrl = $(jq '.website_url' <<<"$M")"
+            echo 'containsNsfwContent = false'; echo
+            echo '[package.dependencies]'
+            jq -r '.dependencies[] | capture("^(?<k>.+)-(?<v>[0-9]+\\.[0-9]+\\.[0-9]+)$") | "\(.k|@json) = \(.v|@json)"' <<<"$M"
+            echo; echo '[publish]'; echo 'repository = "https://thunderstore.io"'
+            echo "communities = [\"$COMMUNITY\"]"; echo
+            echo '[publish.categories]'; echo "$COMMUNITY = [$(IFS=,; echo "${SLUGS[*]}")]"
+          } > thunderstore.toml
+          cat thunderstore.toml
+
+      - name: Upload to Thunderstore
+        if: env.DRY_RUN != 'true'
+        env:
+          TCLI_AUTH_TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "$TCLI_AUTH_TOKEN" ] || { echo "::error::Secret THUNDERSTORE_TOKEN is not set"; exit 1; }
+          dotnet tool install -g tcli --version 0.2.5
+          tcli publish --config-path thunderstore.toml --file "${{ steps.info.outputs.ts_zip }}"
+
+      - name: Check the Nexus settings
+        run: |
+          [ -n "${{ steps.info.outputs.nexus_file_id }}" ] || { echo "::error::nexus.file_id is empty in ${{ steps.info.outputs.mod }}/publish.json"; exit 1; }
+
+      - name: Upload to Nexus Mods
+        if: env.DRY_RUN != 'true'
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.11
+        with:
+          api_key: ${{ secrets.NEXUS_API_KEY }}
+          file_id: ${{ steps.info.outputs.nexus_file_id }}
+          filename: ${{ steps.info.outputs.nx_zip }}
+          version: ${{ steps.info.outputs.version }}
+          display_name: ${{ steps.info.outputs.nexus_name }} ${{ steps.info.outputs.version }}
+          description: ${{ steps.info.outputs.nexus_desc }}
+          category: main
+          archive_existing_version: true
+          primary_mod_manager_download: true
+          allow_mod_manager_download: true
+          update_mod_version: true
+          mod_id: ${{ steps.info.outputs.nexus_mod_id }}
+          changelog: ${{ steps.info.outputs.notes }}
