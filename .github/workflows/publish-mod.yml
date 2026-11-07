@@ -109,7 +109,9 @@ jobs:
         run: |
           set -euo pipefail
           [ -n "$TCLI_AUTH_TOKEN" ] || { echo "::error::Secret THUNDERSTORE_TOKEN is not set"; exit 1; }
-          dotnet tool install -g tcli --version 0.2.5
+          # latest published tcli (NuGet's version numbers don't follow the GitHub tags)
+          dotnet tool install -g tcli
+          dotnet tool list -g | grep -i tcli
           tcli publish --config-path thunderstore.toml --file "${{ steps.info.outputs.ts_zip }}"
 
       - name: Check the Nexus settings
