@@ -12,7 +12,13 @@ More mods will be added here as they're released.
 
 ## Installing
 
-Use a mod manager (r2modman or Thunderstore Mod Manager) and install from Thunderstore, or download from Nexus and follow the instructions on the mod's page. All mods need [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/).
+Every mod needs BepInEx for Valheim ([BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)). Pick whichever way you already use:
+
+- **r2modman / Thunderstore Mod Manager:** install the mod from Thunderstore. BepInEx is installed for you.
+- **Vortex or Mod Organizer 2:** download the mod from Nexus Mods with "Mod Manager Download". Your mod manager needs Valheim's BepInEx set up first (Vortex's Valheim support handles this; in Mod Organizer 2 use its Valheim support plugin and install BepInExPack Valheim as a mod).
+- **Manual:** download from Nexus Mods and extract the zip into your Valheim folder (the one with valheim.exe). The zip already has the `BepInEx/plugins/...` folders.
+
+Each mod's page also has its own install notes.
 
 ## Building from source
 

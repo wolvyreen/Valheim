@@ -58,9 +58,11 @@ The config file is `BepInEx/config/wolvy.valheim.crossbeams.cfg` (created the fi
 
 ## Installation
 
-**With a mod manager (r2modman / Thunderstore Mod Manager):** click Install. BepInExPack Valheim is installed for you if you don't have it.
+**r2modman / Thunderstore Mod Manager:** click Install. BepInExPack Valheim is installed for you if you don't have it.
 
-**Manual:** install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/), then put `WolvysCrossBeams.dll` in `BepInEx/plugins/`.
+**Vortex or Mod Organizer 2 (from Nexus Mods):** click "Mod Manager Download" on the Nexus page, then enable the mod. Your mod manager needs BepInEx for Valheim set up first (Vortex's Valheim support handles this; in Mod Organizer 2 use its Valheim support plugin and install BepInExPack Valheim as a mod).
+
+**Manual:** install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/), then put `WolvysCrossBeams.dll` in `BepInEx/plugins/` (the Nexus download already has the right folders: extract it into your Valheim folder, the one with valheim.exe).
 
 ## Compatibility
 
