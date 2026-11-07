@@ -62,8 +62,4 @@ I made this mod with Claude, Anthropic's AI. I ran into the problem while buildi
 
 ## Changelog
 
-**1.0.2:** Tidied up how the snap points are compared, and the check does less work while you're building.
-
-**1.0.1:** Duplicates are now spotted by their snap points, so a copy that's just been turned round (a beam turned 180°, a pole, a floor turned 90°) gets blocked again.
-
 **1.0.0:** First release.

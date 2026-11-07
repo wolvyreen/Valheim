@@ -1,4 +1,4 @@
-// Wolvy's Cross Beams - lets crossed beams (X and + crosses) snap in vanilla Valheim
+// Wolvy's Cross Beams - lets two angled beams of the same type snap into an X in Valheim
 // Author: Wolvyreen(With_ClaudeAI)
 //
 // Why it is needed (read from assembly_valheim.dll):
@@ -10,7 +10,7 @@
 //   Beams have that flag off, so a second beam crossing the first at its centre is treated as a
 //   duplicate even when it is turned 90 degrees.
 //
-// The fix (1.0.1): a same-named piece in the same spot only counts as a duplicate when the new
+// The fix: a same-named piece in the same spot only counts as a duplicate when the new
 // piece's snap points land on the existing piece's snap points. That catches every real
 // duplicate, including symmetric ones (a beam turned 180, a pole turned any amount, a square
 // floor turned 90), and lets a crossing piece through because its ends are somewhere else.
@@ -35,7 +35,7 @@ namespace WolvysCrossBeams
     {
         public const string Guid = "wolvy.valheim.crossbeams";
         public const string PluginName = "Wolvy's Cross Beams";
-        public const string PluginVersion = "1.0.2";
+        public const string PluginVersion = "1.0.0";
         public const string PluginAuthor = "Wolvyreen(With_ClaudeAI)";
 
         // The same limits the game uses
