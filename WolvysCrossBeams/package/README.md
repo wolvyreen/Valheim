@@ -42,6 +42,8 @@ There's one setting, in `BepInEx/config/wolvy.valheim.crossbeams.cfg` (it appear
 
 ## Installing
 
+Download it from [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Cross_Beams/) or [Nexus Mods](https://www.nexusmods.com/valheim/mods/4876).
+
 **r2modman or Thunderstore Mod Manager:** hit Install and you're done. It sets up BepInEx for you if you don't have it.
 
 **Vortex or Mod Organizer 2:** use "Mod Manager Download" on the Nexus page and enable the mod. You'll need BepInEx for Valheim set up in your mod manager first. Vortex's Valheim support does this for you. In Mod Organizer 2, use its Valheim support plugin and install BepInExPack Valheim as a mod.

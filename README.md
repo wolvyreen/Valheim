@@ -6,7 +6,7 @@ Every mod has its own folder here with the source code, tests, build scripts, RE
 
 | Mod | What it does | Download |
 |---|---|---|
-| [Wolvy's Cross Beams](WolvysCrossBeams/) | Lets you snap two of the same angled beam into an X. Vanilla refuses the second one; with this it clicks into place. Real duplicates are still blocked. | Thunderstore · Nexus *(links coming soon)* |
+| [Wolvy's Cross Beams](WolvysCrossBeams/) | Lets you snap two of the same angled beam into an X. Vanilla refuses the second one; with this it clicks into place. Real duplicates are still blocked. | [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Cross_Beams/) · [Nexus](https://www.nexusmods.com/valheim/mods/4876) |
 
 More will show up here as I release them.
 
