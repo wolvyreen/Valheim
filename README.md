@@ -6,7 +6,7 @@ Each mod has its own folder with its source code, tests, build tools, README and
 
 | Mod | What it does | Download |
 |---|---|---|
-| [Wolvy's Cross Beams](WolvysCrossBeams/) | Build X and + crosses from beams of the same type: the second beam now snaps across the first instead of being refused. Real duplicates are still blocked. Client-side only. | Thunderstore · Nexus *(links coming)* |
+| [Wolvy's Cross Beams](WolvysCrossBeams/) | Cross angled (26° and 45°) beams of the same type into an X: the second beam now snaps across the first instead of being refused. Real duplicates are still blocked. Client-side only. | Thunderstore · Nexus *(links coming)* |
 
 More mods will be added here as they're released.
 

@@ -2,17 +2,17 @@
 
 **By Wolvyreen(With_ClaudeAI)**
 
-Build an **X** or a **+** cross out of two beams of the same type, and the second beam **snaps** across the first, the way you'd expect. In vanilla Valheim the game quietly refuses that snap, whatever kind of beam you use.
+Build an **X** out of two angled beams of the same type (26° or 45°), and the second beam **snaps** across the first, the way you'd expect. In vanilla Valheim the game quietly refuses that snap, whatever kind of angled beam you use.
 
-Works with every beam and pole type (wood, core wood, darkwood, iron-wood and so on), diagonal 26° and 45° beams, and any other piece you want to cross with a copy of itself.
+Works with every angled beam (wood, core wood, darkwood and so on), and with any other piece that the game refuses to cross with a copy of itself for the same reason.
 
 ---
 
 ## The problem
 
-You place one beam, then try to snap a second identical beam across it, for example its lower end onto the top of a support post. The second beam just won't snap. It floats loose in front of the first one, however carefully you aim and whichever snap point you pick with Q/E.
+You place one angled beam, then try to snap a second identical angled beam across it, mirrored, to make an X: for example its lower end onto the top of a support post. The second beam just won't snap. It floats loose in front of the first one, however carefully you aim and whichever snap point you pick with Q/E.
 
-A lot of players run into this with diagonal braces, X-shaped wall bracing, crossed roof beams and + shaped floor beams.
+A lot of players run into this with X-shaped wall bracing and crossed diagonal braces. (Straight beams crossed in a + shape already work in vanilla.)
 
 ## Why it happens
 
@@ -20,7 +20,7 @@ Before the game snaps a piece, it checks for an **accidental duplicate**. This s
 
 The check is very simple. If a piece **with the same name** already has its **centre within 5 cm** of where the new piece would go, the snap is thrown away. It doesn't look at the angle. The game does have an option to also compare angles, but it's switched off for beams.
 
-In a symmetric cross, both beams have their centre at the crossing point. So the second beam's centre lands right on the first one's, and the game treats a beam turned 90° as a duplicate.
+In a symmetric X, both angled beams have their centre at the crossing point. The second beam is the same piece, just turned around, so its centre lands right on the first one's, and the game treats it as a duplicate.
 
 ## What this mod changes
 
