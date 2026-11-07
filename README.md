@@ -1,37 +1,37 @@
 # Wolvy's Valheim mods
 
-BepInEx mods for [Valheim](https://www.valheimgame.com/) by **Wolvyreen**, made with Claude (Anthropic's AI).
+These are the Valheim mods I've made. Each one fixes or adds something I wanted while playing. They're BepInEx mods, and I make them with the help of Claude (Anthropic's AI).
 
-Each mod has its own folder with its source code, tests, build tools, README and changelog.
+Every mod has its own folder here with the source code, tests, build scripts, README and changelog.
 
 | Mod | What it does | Download |
 |---|---|---|
-| [Wolvy's Cross Beams](WolvysCrossBeams/) | Cross angled (26° and 45°) beams of the same type into an X: the second beam now snaps across the first instead of being refused. Real duplicates are still blocked. Client-side only. | Thunderstore · Nexus *(links coming)* |
+| [Wolvy's Cross Beams](WolvysCrossBeams/) | Lets you snap two angled beams of the same type into an X. Vanilla refuses the second beam; with this it clicks into place. Real duplicates are still blocked. | Thunderstore · Nexus *(links coming soon)* |
 
-More mods will be added here as they're released.
+More will show up here as I release them.
 
 ## Installing
 
-Every mod needs BepInEx for Valheim ([BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)). Pick whichever way you already use:
+All my mods need BepInEx for Valheim ([BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)). Use whatever you already use:
 
-- **r2modman / Thunderstore Mod Manager:** install the mod from Thunderstore. BepInEx is installed for you.
-- **Vortex or Mod Organizer 2:** download the mod from Nexus Mods with "Mod Manager Download". Your mod manager needs Valheim's BepInEx set up first (Vortex's Valheim support handles this; in Mod Organizer 2 use its Valheim support plugin and install BepInExPack Valheim as a mod).
-- **Manual:** download from Nexus Mods and extract the zip into your Valheim folder (the one with valheim.exe). The zip already has the `BepInEx/plugins/...` folders.
+- **r2modman or Thunderstore Mod Manager:** install from Thunderstore. BepInEx gets set up for you.
+- **Vortex or Mod Organizer 2:** grab the mod from Nexus with "Mod Manager Download". Your mod manager needs BepInEx for Valheim set up first. Vortex's Valheim support does this for you. In Mod Organizer 2, use its Valheim support plugin and install BepInExPack Valheim as a mod.
+- **By hand:** download from Nexus and extract the zip into your Valheim folder (the one with valheim.exe). The folders inside are already set up.
 
-Each mod's page also has its own install notes.
+Each mod's page has its own install notes too.
 
 ## Building from source
 
-Each mod's `tools/build.sh` builds it with Mono (`mcs`) against your own game's DLLs, and `tests/run-tests.sh` runs its tests. See the comments at the top of those scripts for what they need. There's also a `.csproj` for building with `dotnet` / Visual Studio (set `ValheimPath` and `BepInExPath` if your folders differ).
+Each mod has a `tools/build.sh` that builds it with Mono (`mcs`) against your own game's DLLs, and a `tests/run-tests.sh` for its tests. The comments at the top of each script say what they need. There's also a `.csproj` if you'd rather build with `dotnet` or Visual Studio (set `ValheimPath` and `BepInExPath` if your folders are somewhere else).
 
-## Bugs and ideas
+## Found a bug or got an idea?
 
-Open an [Issue](../../issues) and say which mod and version you're using. A copy of `BepInEx/LogOutput.log` helps a lot.
+Open an [Issue](../../issues) and tell me which mod and version you're on. Your `BepInEx/LogOutput.log` helps a lot.
 
-## Made with AI
+## How these are made
 
-These mods were made with Claude. Wolvyreen decides what each mod should do, finds the problems and tests everything in game. Claude reads the game code, and writes the mod code and documentation. The Thunderstore and Nexus pages are marked as AI-generated.
+I make these with Claude. I come up with the idea, spot the problems and test everything in game. Claude reads through the game code and writes the mod code and most of the docs. On Thunderstore and Nexus they're marked as AI-generated.
 
 ## Licence
 
-[MIT](LICENSE): free to use, change and share, as long as the copyright notice stays with it.
+[MIT](LICENSE). Use them, change them and share them, just keep the copyright notice with them.
