@@ -36,9 +36,11 @@ If a Valheim update changes the bit of game code this mod hooks into, it writes 
 
 ## Settings
 
-There's one setting, in `BepInEx/config/wolvy.valheim.crossbeams.cfg` (it appears after you start the game once with the mod), or in Configuration Manager if you use it:
+There's one setting, and the easiest place to change it is in game: open your inventory (Tab) and click the wolf's head button. That opens "Wolvy's Mods", one window with a tab for each of my mods you have installed. Cross Beams has its own tab there.
 
-`[General] Enabled` (default `true`) turns the fix off without uninstalling the mod.
+`Enabled` (on by default) turns the fix off without uninstalling the mod.
+
+You can also change it in Configuration Manager if you use it, or in `BepInEx/config/wolvy.valheim.crossbeams.cfg` (it appears after you start the game once with the mod).
 
 ## Installing
 
@@ -71,5 +73,7 @@ Thanks to shudnal for Configuration Manager and to the BepInEx team for ScriptEn
 I made this mod with Claude, Anthropic's AI. I ran into the problem while building, worked out what I wanted and tested it in game. Claude dug through the game code to find out why the snap was being refused, and wrote the code and most of the text.
 
 ## Changelog
+
+**1.0.1:** The setting now lives in the "Wolvy's Mods" window too, behind the wolf's head button in your inventory. Snapping works exactly the same as before.
 
 **1.0.0:** First release.

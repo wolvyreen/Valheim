@@ -16,6 +16,9 @@
 // floor turned 90), and lets a crossing piece through because its ends are somewhere else.
 // Pieces with m_allowRotatedOverlap on keep vanilla's extra allowance.
 //
+// Settings: the shared Wolvyreen mod hub window (src/WolvyreenModHub.cs + src/ModHubUi/, copied verbatim from
+// Wolvy's Mob Tracker; never edit them here only) and Configuration Manager both show them.
+//
 // Valheim is reached by name through reflection.
 
 using System;
@@ -35,7 +38,7 @@ namespace WolvysCrossBeams
     {
         public const string Guid = "wolvy.valheim.crossbeams";
         public const string PluginName = "Wolvy's Cross Beams";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
         public const string PluginAuthor = "Wolvyreen(With_ClaudeAI)";
 
         // The same limits the game uses
@@ -56,13 +59,16 @@ namespace WolvysCrossBeams
         {
             Log = Logger;
             Enabled = Config.Bind("General", "Enabled", true,
-                "Let a beam (or any piece) snap where it crosses another piece of the same type. A real duplicate " +
-                "(a piece whose snap points land on the existing piece's snap points) is still refused, as in vanilla. " +
-                "Version " + PluginVersion + ".");
+                "Lets an angled beam snap where it crosses another beam of the same kind. " +
+                "A real duplicate (a piece whose snap points land on the existing piece's snap points) is still refused, as in vanilla.");
 
             // A hook ID of our own per loaded copy: ScriptEngine starts the new copy before the old
             // one is destroyed, and the old one's OnDestroy must only remove its own hooks.
             _harmony = new Harmony(Guid + "." + System.Guid.NewGuid().ToString("N").Substring(0, 8));
+
+            // Wolvyreen's mod hub: this mod's tab in the shared "Wolvy's Mods" window (every setting is bound by now)
+            try { WolvyreenModHub.Hub.Register(Guid, PluginName, PluginVersion, Config, Logger, _harmony); }
+            catch (Exception e) { Log.LogWarning("Mod hub: could not add Wolvy's Cross Beams: " + e.Message); }
 
             Type playerType = AccessTools.TypeByName("Player");
             _pieceType = AccessTools.TypeByName("Piece");
@@ -84,6 +90,7 @@ namespace WolvysCrossBeams
 
         private void OnDestroy()
         {
+            try { WolvyreenModHub.Hub.Unregister(); } catch (Exception e) { Log?.LogWarning("Mod hub: " + e.Message); }
             _harmony?.UnpatchSelf();
         }
 
