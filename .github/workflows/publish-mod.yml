@@ -1,10 +1,12 @@
 # Publishes one mod to Thunderstore and Nexus Mods when a GitHub release is published.
 #
+# Releases are created by hand on GitHub (Claude sessions may not create releases).
 # Release tag:   <ModFolder>-v<version>        e.g. WolvysCrossBeams-v1.0.1
 # Release files: <Package>-<version>-Thunderstore.zip and <Package>-<version>-Nexus.zip
 #                e.g. Wolvys_Cross_Beams-1.0.1-Thunderstore.zip / -Nexus.zip
 # Release notes: become the Nexus changelog (one line per entry).
-# Settings per mod: <ModFolder>/publish.json
+# Settings per mod: <ModFolder>/publish.json (nexus.file_id and nexus.mod_uid = 'File ID' and 'Unique Mod ID'
+#   from the mod's Files tab on Nexus, tick Advanced)
 # Secrets (repo Settings > Secrets and variables > Actions):
 #   THUNDERSTORE_TOKEN  service account token of the Thunderstore team
 #   NEXUS_API_KEY       Nexus Mods API key
@@ -63,7 +65,7 @@ jobs:
           {
             echo "mod=$MOD"; echo "version=$VERSION"; echo "package=$PACKAGE"; echo "ts_zip=$TS"; echo "nx_zip=$NX"
             echo "team=$(jq -r .thunderstore.team "$CFG")"; echo "community=$(jq -r .thunderstore.community "$CFG")"
-            echo "nexus_mod_id=$(jq -r .nexus.mod_id "$CFG")"; echo "nexus_file_id=$(jq -r '.nexus.file_id // empty' "$CFG")"
+            echo "nexus_mod_uid=$(jq -r '.nexus.mod_uid // empty' "$CFG")"; echo "nexus_file_id=$(jq -r '.nexus.file_id // empty' "$CFG")"
             echo "nexus_name=$(jq -r .nexus.display_name "$CFG")"; echo "nexus_desc=$(jq -r .nexus.file_description "$CFG")"
           } >> "$GITHUB_OUTPUT"
           gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .body > notes.txt || true
@@ -117,6 +119,7 @@ jobs:
       - name: Check the Nexus settings
         run: |
           [ -n "${{ steps.info.outputs.nexus_file_id }}" ] || { echo "::error::nexus.file_id is empty in ${{ steps.info.outputs.mod }}/publish.json"; exit 1; }
+          [ -n "${{ steps.info.outputs.nexus_mod_uid }}" ] || { echo "::error::nexus.mod_uid (Unique Mod ID) is empty in ${{ steps.info.outputs.mod }}/publish.json"; exit 1; }
 
       - name: Upload to Nexus Mods
         if: env.DRY_RUN != 'true'
@@ -133,5 +136,5 @@ jobs:
           primary_mod_manager_download: true
           allow_mod_manager_download: true
           update_mod_version: true
-          mod_id: ${{ steps.info.outputs.nexus_mod_id }}
+          mod_id: ${{ steps.info.outputs.nexus_mod_uid }}   # Nexus 'Unique Mod ID' (Files tab > Advanced), not the number in the page address
           changelog: ${{ steps.info.outputs.notes }}

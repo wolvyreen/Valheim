@@ -14,6 +14,7 @@
   },
   "nexus": {
     "mod_id": 4876,
+    "mod_uid": 15749645079308,
     "file_id": 8330925,
     "display_name": "Wolvys Cross Beams",
     "file_description": "Use Mod Manager Download, or extract the zip into your Valheim folder (the one with valheim.exe). Needs BepInEx for Valheim."
