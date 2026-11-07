@@ -4,7 +4,7 @@
 
 Ever tried to brace a wall with two angled beams in an X? The first one goes on fine. The second one just won't snap. It hangs in front of the first beam no matter how you aim it or which snap point you pick with Q/E.
 
-This mod fixes that. Put up your first 26° or 45° beam, then snap a second matching beam across it, and it clicks into place like it should.
+This mod fixes that. Put up your first 26° or 45° beam, then snap a second one across it, and it clicks into place like it should.
 
 ## Why the game won't let you
 

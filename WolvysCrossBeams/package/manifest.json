@@ -2,7 +2,7 @@
   "name": "Wolvys_Cross_Beams",
   "version_number": "1.0.0",
   "website_url": "https://github.com/wolvyreen/Valheim/tree/main/WolvysCrossBeams",
-  "description": "Lets you snap two matching angled beams into an X. Vanilla refuses the second one; with this it clicks into place. Real duplicates are still blocked. Client-side only.",
+  "description": "Lets you snap two angled beams into an X. Vanilla refuses the second one; with this it clicks into place. Real duplicates are still blocked. Client-side only.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2360"
   ]
