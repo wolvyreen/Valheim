@@ -1,0 +1,13 @@
+# Build output
+build/
+out/
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+# Release packages are uploaded to Thunderstore / Nexus, not kept in git
+*.zip
+publish/
+# Local notes
+LAST-BUILD.txt
