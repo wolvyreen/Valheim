@@ -66,7 +66,7 @@ Everything's on GitHub, including the tests and build scripts: https://github.co
 
 ## Thanks
 
-Thanks to shudnal for Configuration Manager and to the BepInEx team for ScriptEngine. Being able to flip settings in game and reload the mod without restarting Valheim made testing this so much quicker. And thanks to denikson for BepInExPack Valheim, which every Valheim mod relies on.
+Thanks to the BepInEx team for ScriptEngine. Being able to reload the mod without restarting Valheim made testing this so much quicker. And thanks to denikson for BepInExPack Valheim, which every Valheim mod relies on.
 
 ## How this was made
 
