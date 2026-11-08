@@ -7,6 +7,19 @@
 // installed; a tab shows that mod's settings, grouped by section, with controls copied from the game's
 // own Settings menu (checkboxes, sliders, drop-downs, text boxes) and the game's fonts and tooltips.
 // Changes are saved at once, like Configuration Manager does.
+// (hub 4) The window can be resized with the grip in its bottom-right corner (the size is kept, for every mod's
+// copy, in PlayerPrefs). A mod can show one of its sections on the whole window (see "full" in
+// WolvyreenModHub.cs): the section list and the settings list are hidden and the tab row holds a Back button.
+// (hub 6) On a whole-window section the mod tabs stay in the tab row.
+// (hub 10) Setting lines stretch with the window (at least 940 wide); text boxes, drop-downs and slider bars are all
+// HubKit.ControlWidth wide.
+// (hub 9) In a setting's line the reset arrow sits left of the control and a slider's value left of the slider, so
+// every control ends at the same right edge.
+// (hub 7) Resizing keeps the top-left corner in place (the grip's corner follows the mouse, like any window); an X at
+// the top right closes the window; the tab row holds only the mod tabs (a whole-window section offers its own way to
+// the mod's settings, e.g. a cog calling Hub.Open(id, section)).
+// (hub 5) The window can be moved: drag it by any spot that isn't a control (the title, the frame, empty space);
+// the place is kept like the size.
 //
 // Only one copy draws (see WolvyreenModHub.cs). The game is reached by reflection; Unity's UI and
 // TextMeshPro are used directly. Everything not found (a game update) falls back to something plainer,
@@ -53,6 +66,16 @@ namespace WolvyreenModHub
         private static GameObject _legacy;   // Wolvy's Drop Counters' own button (from before the hub): hidden, there is one button for all
         private const string LegacyButton = "WolvysDropCountersButton";
         private static bool _failedOnce, _reported;
+
+        // (hub 4) resizing and whole-window sections
+        private static RectTransform _frame, _full, _view;
+        private static GameObject _scrollbar;
+        private static TMP_Text _title;
+        private static Vector2 _minSize;
+        private const string SizeKey = "Wolvyreen.ModHub.WindowSize";
+        private const string PlaceKey = "Wolvyreen.ModHub.WindowPlace";   // (hub 5) anchoredPosition "x,y"
+        private static readonly HashSet<string> FullSections = new HashSet<string>();         // "mod id\nsection" shown whole-window
+        private static readonly Dictionary<string, string> LastNormal = new Dictionary<string, string>();   // mod id -> last ordinary section
 
         // templates (found once per game session)
         internal static Toggle _toggleT;
@@ -113,6 +136,8 @@ namespace WolvyreenModHub
                 _tipText = AccessTools.Field(_tooltipType, "m_text");
             }
             MethodInfo show = AccessTools.Method(gui, "Show");
+            _show = show;
+            _isVisible = AccessTools.Method(gui, "IsVisible");
             MethodInfo hide = AccessTools.Method(gui, "Hide");
             MethodInfo update = AccessTools.Method(gui, "Update");
             if (_trophiesPanel == null || show == null || hide == null || update == null)
@@ -130,9 +155,14 @@ namespace WolvyreenModHub
         {
             if (!on)
             {
+                // (hub 3) stop offering to open the window, unless another copy has taken over already
+                if (ReferenceEquals(AppDomain.CurrentDomain.GetData(Hub.OpenKey), _opener))
+                    AppDomain.CurrentDomain.SetData(Hub.OpenKey, null);
                 Remove();
                 return;
             }
+            _opener = _opener ?? OpenAt;
+            AppDomain.CurrentDomain.SetData(Hub.OpenKey, _opener);
             var gui = _guiInstance?.GetValue(null) as Component;
             if (gui != null && gui.gameObject.activeInHierarchy)
                 Safe(() => EnsureButton(gui));
@@ -174,6 +204,17 @@ namespace WolvyreenModHub
             foreach (TMP_InputField f in Fields)
                 if (f != null && f.isFocused)
                     return true;
+            // (hub 3) also a text box of a mod's own (its search box, ...) anywhere in this window
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            if (selected != null && _panel != null && selected.transform.IsChildOf(_panel.transform))
+            {
+                var tmp = selected.GetComponent<TMP_InputField>();
+                if (tmp != null && tmp.isFocused)
+                    return true;
+                var legacy = selected.GetComponent<InputField>();
+                if (legacy != null && legacy.isFocused)
+                    return true;
+            }
             return false;
         }
 
@@ -324,6 +365,37 @@ namespace WolvyreenModHub
                 _panel.SetActive(false);
         }
 
+        private static MethodInfo _show, _isVisible;
+        private static Action<string, string> _opener;
+
+        /// (hub 3) Hub.Open: shows the inventory if it is closed, then this window at a mod's tab (and section).
+        private static void OpenAt(string id, string section)
+        {
+            Safe(() =>
+            {
+                var gui = _guiInstance?.GetValue(null) as Component;
+                if (gui == null)
+                    return;
+                bool visible = _isVisible != null && _isVisible.GetParameters().Length == 0 && (bool)_isVisible.Invoke(null, null);
+                if (!visible && _show != null)
+                {
+                    ParameterInfo[] ps = _show.GetParameters();
+                    var args = new object[ps.Length];
+                    for (int i = 0; i < ps.Length; i++)
+                        args[i] = ps[i].HasDefaultValue ? ps[i].DefaultValue
+                                  : ps[i].ParameterType.IsValueType ? Activator.CreateInstance(ps[i].ParameterType) : null;
+                    _show.Invoke(gui, args);
+                }
+                if (!string.IsNullOrEmpty(id))
+                {
+                    _tab = id;
+                    if (!string.IsNullOrEmpty(section))
+                        Sections[id] = section;
+                }
+                Open();
+            });
+        }
+
         private static void Build(Component gui)
         {
             var trophies = _trophiesPanel.GetValue(gui) as GameObject;
@@ -372,6 +444,7 @@ namespace WolvyreenModHub
             // the title: the biggest text outside the list
             TMP_Text title = _panel.GetComponentsInChildren<TMP_Text>(true)
                 .Where(t => !t.transform.IsChildOf(_content)).OrderByDescending(t => t.fontSize).FirstOrDefault();
+            _title = title;
             if (title != null)
             {
                 title.text = Title;
@@ -426,10 +499,288 @@ namespace WolvyreenModHub
             if (viewBack.sprite == null)
                 viewBack.color = new Color(0f, 0f, 0f, 0.3f);
 
+            _view = view;
+            _scrollbar = scroll != null && scroll.verticalScrollbar != null && scroll.verticalScrollbar.transform.parent == view.parent
+                ? scroll.verticalScrollbar.gameObject : null;
+            Safe(MakeResizable);
+
             _holder = new GameObject("Templates");
             _holder.SetActive(false);
             _holder.transform.SetParent(_panel.transform, false);
             Report(gui, trophies, scroll, title);
+        }
+
+        // ---------- (hub 4) size and whole-window sections ----------
+
+        /// The window's frame follows a size you drag (the copy also holds a full-screen blur and darkening, which stay).
+        /// Every part between the frame and the list is anchored so it moves or stretches with the frame.
+        private static void MakeResizable()
+        {
+            if (_view == null)
+                return;
+            Transform f = _view;
+            while (f.parent != null && f.parent != _panel.transform)
+                f = f.parent;
+            if (f.parent != _panel.transform || f == _view)
+                return;
+            _frame = (RectTransform)f;
+            for (Transform level = _view.parent; level != null; level = level.parent)
+            {
+                foreach (RectTransform c in level.Cast<Transform>().OfType<RectTransform>().ToList())
+                    Pin(c);
+                if (level == _frame)
+                    break;
+            }
+
+            // the area a whole-window section gets: the section list and the settings list together (below the tabs)
+            var parent = (RectTransform)_view.parent;
+            Rect pr = parent.rect, side = RectIn(_side), list = RectIn(_view);
+            float right = list.xMax;
+            if (_scrollbar != null)
+                right = Mathf.Max(right, RectIn((RectTransform)_scrollbar.transform).xMax);
+            _full = NewRect(parent, "WholeWindow");
+            _full.anchorMin = Vector2.zero;
+            _full.anchorMax = Vector2.one;
+            _full.offsetMin = new Vector2(side.xMin - pr.xMin, Mathf.Min(side.yMin, list.yMin) - pr.yMin);
+            _full.offsetMax = new Vector2(right - pr.xMax, list.yMax - pr.yMax);
+            _full.gameObject.SetActive(false);
+
+            // the grip
+            RectTransform grip = NewRect(_frame, "ResizeGrip");
+            grip.anchorMin = grip.anchorMax = grip.pivot = new Vector2(1f, 0f);
+            grip.sizeDelta = new Vector2(26f, 26f);
+            grip.anchoredPosition = new Vector2(-12f, 12f);
+            var img = grip.gameObject.AddComponent<Image>();
+            img.sprite = GripSprite();
+            img.color = new Color(1f, 0.85f, 0.6f, 0.8f);
+            img.raycastTarget = true;
+            grip.gameObject.AddComponent<Grip>();
+            SetTooltip(grip.gameObject, "Window size", "Drag to resize the window.");
+            grip.SetAsLastSibling();
+
+            // (hub 5) moving: drags that no control takes (title, frame, empty space) reach the frame
+            Image frameImage = _frame.GetComponent<Image>();
+            if (frameImage == null)
+            {
+                frameImage = _frame.gameObject.AddComponent<Image>();
+                frameImage.color = new Color(0f, 0f, 0f, 0f);
+            }
+            frameImage.raycastTarget = true;
+            _frame.gameObject.AddComponent<Mover>();
+
+            // (hub 7) an X at the top right, level between the frame's top and the tab row, lined up with the row's end
+            if (_tabs != null)
+            {
+                var corners = new Vector3[4];
+                _tabs.GetWorldCorners(corners);   // bottom-left, top-left, top-right, bottom-right
+                Vector3 tabsTopRight = _frame.InverseTransformPoint(corners[2]);
+                Rect fr = _frame.rect;
+                float top = fr.yMax, below = tabsTopRight.y;
+                float xh = Mathf.Clamp(top - below - 12f, 30f, 40f);
+                Button close = TextButton(_frame, "X", _textButtonT, 18);
+                var xr = (RectTransform)close.transform;
+                xr.anchorMin = xr.anchorMax = xr.pivot = new Vector2(1f, 1f);
+                xr.sizeDelta = new Vector2(xh + 4f, xh);
+                xr.anchoredPosition = new Vector2(tabsTopRight.x - fr.xMax, -((top - below) - xh) / 2f);
+                close.onClick.AddListener(() => Safe(Close));
+                SetTooltip(close.gameObject, "Close", "Close the window (Esc)");
+            }
+
+            Vector2 start = _frame.rect.size;
+            _minSize = new Vector2(Mathf.Min(start.x, 1000f), Mathf.Min(start.y, 640f));
+            string saved = PlayerPrefs.GetString(SizeKey, "");
+            string[] parts = saved.Split(',');
+            if (parts.Length == 2 && float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float w)
+                && float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float h))
+                SetFrameSize(new Vector2(w, h));
+            string[] at = PlayerPrefs.GetString(PlaceKey, "").Split(',');
+            if (at.Length == 2 && float.TryParse(at[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
+                && float.TryParse(at[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+            {
+                _frame.anchoredPosition = new Vector2(x, y);
+                KeepOnScreen();
+            }
+        }
+
+        /// (hub 5) Moves the window with the mouse.
+        private static void MoveBy(PointerEventData e)
+        {
+            if (_frame == null || !(_frame.parent is RectTransform parent))
+                return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, e.position, e.pressEventCamera, out Vector2 now)
+                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, e.position - e.delta, e.pressEventCamera, out Vector2 before))
+                return;
+            _frame.anchoredPosition += now - before;
+            KeepOnScreen();
+        }
+
+        /// The title stays on screen, and at least a strip of the window at the sides and bottom.
+        private static void KeepOnScreen()
+        {
+            if (_frame == null || !(_frame.parent is RectTransform parent) || parent.rect.width < 100f)
+                return;
+            Rect pr = parent.rect, r = RectIn(_frame);
+            const float keep = 120f;
+            Vector2 shift = Vector2.zero;
+            if (r.xMax < pr.xMin + keep) shift.x = pr.xMin + keep - r.xMax;
+            if (r.xMin > pr.xMax - keep) shift.x = pr.xMax - keep - r.xMin;
+            if (r.yMax > pr.yMax) shift.y = pr.yMax - r.yMax;
+            if (r.yMax < pr.yMin + keep) shift.y = pr.yMin + keep - r.yMax;
+            if (shift != Vector2.zero)
+                _frame.anchoredPosition += shift;
+        }
+
+        private static void SavePlace()
+        {
+            if (_frame == null)
+                return;
+            Vector2 p = _frame.anchoredPosition;
+            PlayerPrefs.SetString(PlaceKey, string.Format(CultureInfo.InvariantCulture, "{0:0},{1:0}", p.x, p.y));
+            PlayerPrefs.Save();
+        }
+
+        private sealed class Mover : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+        {
+            public void OnBeginDrag(PointerEventData e) { }
+            public void OnDrag(PointerEventData e) => Safe(() => MoveBy(e));
+            public void OnEndDrag(PointerEventData e) => Safe(SavePlace);
+        }
+
+        /// Anchors a part so it keeps its place when its parent changes size: along each side, a part that spans most of
+        /// its parent stretches with it; a smaller one stays with the nearest edge (or the middle). Nothing moves now.
+        private static void Pin(RectTransform rt)
+        {
+            var parent = rt.parent as RectTransform;
+            if (parent == null || rt.localScale != Vector3.one || rt.localRotation != Quaternion.identity)
+                return;
+            LayoutElement le = rt.GetComponent<LayoutElement>();
+            if (parent.GetComponent<LayoutGroup>() != null && (le == null || !le.ignoreLayout))
+                return;   // a layout group places it
+            Rect pr = parent.rect, r = RectIn(rt);
+            if (pr.width < 1f || pr.height < 1f)
+                return;
+            Vector2 aMin = Vector2.zero, aMax = Vector2.one;
+            for (int i = 0; i < 2; i++)
+            {
+                float len = pr.size[i];
+                if (r.size[i] > 0.5f * len)
+                    continue;   // stretches: 0..1
+                float at = (r.center[i] - pr.min[i]) / len;
+                float a = at < 0.34f ? 0f : at > 0.66f ? 1f : 0.5f;
+                aMin[i] = a;
+                aMax[i] = a;
+            }
+            rt.anchorMin = aMin;
+            rt.anchorMax = aMax;
+            rt.offsetMin = r.min - (pr.min + Vector2.Scale(aMin, pr.size));
+            rt.offsetMax = r.max - (pr.min + Vector2.Scale(aMax, pr.size));
+        }
+
+        /// A part's rectangle in its parent's space (unscaled, unrotated parts).
+        private static Rect RectIn(RectTransform rt)
+        {
+            Vector2 size = rt.rect.size;
+            Vector2 min = (Vector2)rt.localPosition - Vector2.Scale(rt.pivot, size);
+            return new Rect(min, size);
+        }
+
+        private static void SetFrameSize(Vector2 size)
+        {
+            if (_frame == null)
+                return;
+            var parent = _frame.parent as RectTransform;
+            Vector2 max = parent != null && parent.rect.width > 100f ? parent.rect.size - new Vector2(40f, 40f) : new Vector2(4000f, 3000f);
+            size = new Vector2(Mathf.Clamp(size.x, _minSize.x, Mathf.Max(_minSize.x, max.x)), Mathf.Clamp(size.y, _minSize.y, Mathf.Max(_minSize.y, max.y)));
+            _frame.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);
+            _frame.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
+        }
+
+        private static void DragBy(PointerEventData e)
+        {
+            if (_frame == null || !(_frame.parent is RectTransform parent))
+                return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, e.position, e.pressEventCamera, out Vector2 now)
+                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, e.position - e.delta, e.pressEventCamera, out Vector2 before))
+                return;
+            Vector2 d = now - before;
+            // (hub 7) like any window: the top-left corner stays, the bottom-right corner follows the mouse, and the
+            // window doesn't grow past the screen's right or bottom edge
+            Rect pr = parent.rect, r = RectIn(_frame);
+            Vector2 old = _frame.rect.size;
+            Vector2 wanted = old + new Vector2(d.x, -d.y);
+            wanted.x = Mathf.Min(wanted.x, Mathf.Max(old.x, pr.xMax - r.xMin - 10f));
+            wanted.y = Mathf.Min(wanted.y, Mathf.Max(old.y, r.yMax - pr.yMin - 10f));
+            SetFrameSize(wanted);
+            Vector2 grow = _frame.rect.size - old;
+            _frame.anchoredPosition += new Vector2(grow.x * _frame.pivot.x, -grow.y * (1f - _frame.pivot.y));
+        }
+
+        private static void SaveSize()
+        {
+            if (_frame == null)
+                return;
+            Vector2 s = _frame.rect.size;
+            PlayerPrefs.SetString(SizeKey, string.Format(CultureInfo.InvariantCulture, "{0:0},{1:0}", s.x, s.y));
+            PlayerPrefs.Save();
+        }
+
+        private sealed class Grip : MonoBehaviour, IInitializePotentialDragHandler, IDragHandler, IEndDragHandler
+        {
+            public void OnInitializePotentialDrag(PointerEventData e) => e.useDragThreshold = false;
+            public void OnDrag(PointerEventData e) => Safe(() => DragBy(e));
+            public void OnEndDrag(PointerEventData e) => Safe(() => { SaveSize(); SavePlace(); });
+        }
+
+        private static Sprite _gripSprite;
+
+        /// Three diagonal ridges in the lower-right half of a square: the usual resize grip.
+        private static Sprite GripSprite()
+        {
+            if (_gripSprite != null)
+                return _gripSprite;
+            const int n = 26;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Bilinear };
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    bool on = x >= y && (x - y) % 8 < 3 && x - y >= 4;
+                    t.SetPixel(x, y, on ? Color.white : new Color(1f, 1f, 1f, 0f));
+                }
+            t.Apply();
+            _gripSprite = Sprite.Create(t, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
+            return _gripSprite;
+        }
+
+        /// Shows the whole-window area (true) or the section list and settings list (false).
+        private static void WholeWindow(bool on, string modName)
+        {
+            if (_side != null)
+                _side.gameObject.SetActive(!on);
+            if (_view != null)
+                _view.gameObject.SetActive(!on);
+            if (_scrollbar != null)
+                _scrollbar.SetActive(!on);   // back on: the list shows or hides it again as it needs
+            if (_full != null)
+                _full.gameObject.SetActive(on);
+            if (_title != null)
+                _title.text = on && !string.IsNullOrEmpty(modName) ? modName : Title;
+        }
+
+        private static void ClearFull()
+        {
+            if (_full == null)
+                return;
+            foreach (Transform t in _full.Cast<Transform>().ToList())
+                Object.DestroyImmediate(t.gameObject);
+        }
+
+        /// Where Back goes: the last ordinary section of this mod, else the first one not shown whole-window.
+        private static string BackTo(string id, List<string> sections, string current)
+        {
+            if (LastNormal.TryGetValue(id, out string last) && last != current && sections.Contains(last))
+                return last;
+            return sections.FirstOrDefault(s => s != current && !FullSections.Contains(id + "\n" + s))
+                   ?? sections.FirstOrDefault(s => s != current) ?? current;
         }
 
         /// Rebuilds the tabs and the current tab's page (values are read fresh every time).
@@ -442,27 +793,62 @@ namespace WolvyreenModHub
                 Object.DestroyImmediate(t.gameObject);
 
             List<Dictionary<string, object>> mods = Hub.Mods();
+            foreach (Transform t in _side.Cast<Transform>().ToList())
+                Object.DestroyImmediate(t.gameObject);
+            Resets.Clear();
+            ClearFull();
+            Dictionary<string, object> mod = mods.FirstOrDefault(m => Hub.Get<string>(m, "id") == _tab);
+            var config = mod != null ? Hub.Get<ConfigFile>(mod, "config") : null;
+            List<Shown> shown = config != null ? Entries(config) : new List<Shown>();
+            List<string> sections = shown.Select(x => x.Entry.Definition.Section).Distinct().ToList();
+            string section = null;
+            if (mod != null)
+            {
+                if (!Sections.TryGetValue(_tab, out section) || !sections.Contains(section))
+                    section = sections.FirstOrDefault();
+                Sections[_tab] = section;
+            }
+
+            // (hub 4) a section the mod shows on the whole window: its panel, and Back in the tab row
+            bool whole = false;
+            var full = mod != null ? Hub.Get<Func<string, object, bool>>(mod, "full") : null;
+            if (full != null && section != null && _full != null)
+            {
+                _full.gameObject.SetActive(true);
+                try
+                {
+                    whole = full(section, _full);
+                }
+                catch (Exception e)
+                {
+                    Hub.Log?.LogWarning($"Mod hub: {Hub.Get<string>(mod, "name")} could not fill the window: {e.Message}");
+                    whole = false;
+                }
+                if (!whole)
+                    ClearFull();
+            }
+            WholeWindow(whole, mod != null ? Hub.Get<string>(mod, "name") : null);
+            if (mod != null && section != null && !whole)
+                LastNormal[_tab] = section;
+
+            // the mod tabs: always in view, also over a whole-window section
             foreach (Dictionary<string, object> m in mods)
             {
                 string id = Hub.Get<string>(m, "id");
-                Button tab = TextButton(_tabs, Hub.Get<string>(m, "name"), _tabT, 18);
+                Button tab = TextButton(_tabs, TabName(Hub.Get<string>(m, "name")), _tabT, 18);
                 Layout(tab.gameObject, 190f, 40f);
                 tab.interactable = id != _tab;
                 tab.onClick.AddListener(() => { _tab = id; Safe(Fill); });
             }
-
-            foreach (Transform t in _side.Cast<Transform>().ToList())
-                Object.DestroyImmediate(t.gameObject);
-            Resets.Clear();
-            Dictionary<string, object> mod = mods.FirstOrDefault(m => Hub.Get<string>(m, "id") == _tab);
+            if (whole)
+            {
+                // (hub 7) only the mod tabs: the mod's panel has its own way to its settings (Hub.Open)
+                FullSections.Add(_tab + "\n" + section);
+                Canvas.ForceUpdateCanvases();
+                return;
+            }
             if (mod == null)
                 return;
-            var config = Hub.Get<ConfigFile>(mod, "config");
-            List<Shown> shown = config != null ? Entries(config) : new List<Shown>();
-            List<string> sections = shown.Select(x => x.Entry.Definition.Section).Distinct().ToList();
-            if (!Sections.TryGetValue(_tab, out string section) || !sections.Contains(section))
-                section = sections.FirstOrDefault();
-            Sections[_tab] = section;
             foreach (string name in sections)
             {
                 string chosen = name;
@@ -488,6 +874,19 @@ namespace WolvyreenModHub
                         arrow.SetActive(!Equals(a.ChangedSetting.BoxedValue, a.ChangedSetting.DefaultValue));
                 };
             Canvas.ForceUpdateCanvases();
+        }
+
+        /// A tab shows the mod's name without "Wolvy's" in front: the window's title already says Wolvy's Mods.
+        internal static string TabName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name ?? "";
+            foreach (string lead in new[] { "Wolvy's ", "Wolvy\u2019s ", "Wolvys " })
+            {
+                if (name.StartsWith(lead, StringComparison.OrdinalIgnoreCase) && name.Length > lead.Length)
+                    return name.Substring(lead.Length);
+            }
+            return name;
         }
 
         // ---------- settings ----------
@@ -578,6 +977,7 @@ namespace WolvyreenModHub
             }
 
             RectTransform row = HubKit.SettingRow(_content, s.Name, e.Description?.Description);
+            int first = row.childCount;   // (hub 9) the reset arrow goes here, left of the control
             GameObject control;
             if (type == typeof(bool))
                 control = ToggleFor(row, e);
@@ -607,9 +1007,8 @@ namespace WolvyreenModHub
                 HubKit.Tooltip(reset.gameObject, "Reset", "Back to the default: " + Show(e.DefaultValue));
                 reset.gameObject.SetActive(!Equals(e.BoxedValue, e.DefaultValue));
                 Resets[e] = reset.gameObject;
+                reset.transform.SetSiblingIndex(first);   // (hub 9) left of the control: every control ends at the right edge
             }
-            else
-                HubKit.Space(row, 28f);
         }
 
         private static RectTransform RowRect(string label, string description)
@@ -645,6 +1044,10 @@ namespace WolvyreenModHub
         {
             if (_sliderT == null)
                 return InputFor(row, e);
+            // (hub 9) the value first, then the slider, so the slider ends at the right edge like the other controls
+            TMP_Text value = Text(row, Show(e.BoxedValue), 16, Beige, _bodyFont);
+            Layout(value.gameObject, 50f, 30f);
+            value.alignment = TextAlignmentOptions.Right;
             Slider s = Copy(_sliderT, row);
             foreach (TMP_Text label in s.GetComponentsInChildren<TMP_Text>(true))
                 label.text = "";
@@ -653,9 +1056,7 @@ namespace WolvyreenModHub
             s.maxValue = max;
             s.wholeNumbers = whole;
             s.value = Convert.ToSingle(e.BoxedValue, CultureInfo.InvariantCulture);
-            Layout(s.gameObject, 200f, 24f);
-            TMP_Text value = Text(row, Show(e.BoxedValue), 16, Beige, _bodyFont);
-            Layout(value.gameObject, 50f, 30f);
+            Layout(s.gameObject, HubKit.ControlWidth, 24f);   // (hub 10) as wide as a text box
             s.onValueChanged.AddListener(v =>
             {
                 e.BoxedValue = e.SettingType == typeof(int) ? (object)Mathf.RoundToInt(v)
@@ -689,7 +1090,7 @@ namespace WolvyreenModHub
             d.SetValueWithoutNotify(Math.Max(0, values.IndexOf(current)));
             d.RefreshShownValue();
             d.onValueChanged.AddListener(i => e.BoxedValue = TomlTypeConverter.ConvertToValue(values[i], e.SettingType));
-            Layout(d.gameObject, 240f, 30f);
+            Layout(d.gameObject, HubKit.ControlWidth, 30f);
             return d.gameObject;
         }
 
@@ -736,7 +1137,7 @@ namespace WolvyreenModHub
                     Safe(Fill);
             });
             Fields.Add(f);
-            Layout(f.gameObject, 260f, 30f);
+            Layout(f.gameObject, HubKit.ControlWidth, 30f);
             return f.gameObject;
         }
 
@@ -1017,6 +1418,9 @@ namespace WolvyreenModHub
                 Object.Destroy(_panel);
             _button = _panel = _holder = null;
             _content = _tabs = null;
+            _frame = _full = _view = null;
+            _scrollbar = null;
+            _title = null;
             Fields.Clear();
         }
 

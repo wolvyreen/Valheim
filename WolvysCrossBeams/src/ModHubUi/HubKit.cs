@@ -411,13 +411,18 @@ namespace WolvyreenModHub
         }
 
         internal const float SettingWidth = 940f, ControlsWidth = 420f;
+        /// (hub 10) The width of a setting's control: text box, drop-down and slider bar alike (a slider's number sits left of it).
+        internal const float ControlWidth = 260f;
 
         /// One setting: its name with a short description under it on the left, its controls on the right (returned),
         /// then a thin line. The full description shows on hover.
         internal static RectTransform SettingRow(Transform parent, string name, string description)
         {
             RectTransform row = Row(parent, 12f, -1f);
-            HubWindow.Layout(row.gameObject, SettingWidth, 54f);
+            // (hub 10) at least SettingWidth wide, and as wide as the window's list: the row and the line under it both
+            // stretch, so a bigger window gives the name and description more room and the controls stay at the end of
+            // the line (hub 8 had kept both at SettingWidth)
+            HubWindow.Layout(row.gameObject, SettingWidth, 54f).flexibleWidth = 1f;
             row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(12, 8, 6, 6);
             RectTransform left = Column(row, 2f);
             Size(left, 300f, -1f, 1f);
@@ -439,7 +444,7 @@ namespace WolvyreenModHub
             right.GetComponent<HorizontalLayoutGroup>().childAlignment = TextAnchor.MiddleRight;
             HubWindow.Layout(right.gameObject, ControlsWidth, 40f);
             RectTransform line = HubWindow.NewRect(parent, "Line");
-            HubWindow.Layout(line.gameObject, SettingWidth, 1f);
+            HubWindow.Layout(line.gameObject, SettingWidth, 1f).flexibleWidth = 1f;
             line.gameObject.AddComponent<Image>().color = Line;
             return right;
         }
