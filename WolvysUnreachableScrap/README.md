@@ -38,6 +38,8 @@ Your crosshair is a line from the camera, so it can see the scrap. Your swing st
 
 The easiest place to change them is in game: open your inventory (Tab) and click the wolf's head button. That opens "Wolvy's Mods", one window with a tab for each of my mods you have installed. Unreachable Scrap has its own tab there.
 
+![Click the wolf's head in your inventory to open Wolvy's Mods](https://raw.githubusercontent.com/wolvyreen/Valheim/main/WolvysUnreachableScrap/images/wolvys-mods-button.jpg)
+
 **General**
 - `Enabled` (on): turns the whole mod off without uninstalling it.
 - `DebugText` and `LogDetails` (off): for tracking down problems.
