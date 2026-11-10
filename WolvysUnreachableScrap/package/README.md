@@ -65,11 +65,9 @@ Download it from Thunderstore or Nexus Mods.
 
 **By hand:** install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/), then drop `WolvysUnreachableScrap.dll` into `BepInEx/plugins/`. The Nexus download already has the folders set up, so you can just extract it into your Valheim folder (the one with valheim.exe).
 
-## Other mods
+## Works with other mods
 
-It hooks two game methods with Harmony: a prefix on `Attack.AddHitPoint` (the reach) and a small change inside `MineRock5.DamageArea` (where the loot drops). Both only do anything for muddy scrap in the Sunken Crypts.
-
-If you find a mod it doesn't get along with, let me know and I'll have a look.
+It only changes what happens when you swing a pickaxe at muddy scrap in the Sunken Crypts, so it should sit happily next to your other mods. If you find one it doesn't get along with, let me know and I'll have a look.
 
 ## My other mods
 
