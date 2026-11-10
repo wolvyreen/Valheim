@@ -52,13 +52,17 @@ Download it from [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wo
 
 **By hand:** install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/), then drop `WolvysCrossBeams.dll` into `BepInEx/plugins/`. The Nexus download already has the folders set up, so you can just extract it into your Valheim folder (the one with valheim.exe).
 
-## Other mods
-
-It hooks one game method (`Player.IsOverlappingOtherPiece`) with a Harmony prefix.
+## Compatibility with other mods
 
 Mods that add extra snap points, like Extra Snap Points Made Easy or Snapheim, should work fine alongside it. They decide where things can snap, and this one only decides whether a crossing snap is allowed. Mods that add their own rules to the same check after it runs (ItemDrawers Remake and Elite Building Pieces do this) keep working too.
 
 If you find a mod it doesn't get along with, let me know and I'll have a look.
+
+## My other mods
+
+If you like this one, have a look at my others. You can also see them in game: click the little icon next to the X in the Wolvy's Mods window.
+
+- **Wolvy's Unreachable Scrap - Mine Stuck Scrap in Sunken Crypts**: mine the muddy scrap stuck in Sunken Crypt walls and floors; point at it and swing. [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Unreachable_Scrap/) · [Nexus Mods](https://www.nexusmods.com/valheim/mods/4931)
 
 ## Source code
 
@@ -73,6 +77,8 @@ Thanks to the BepInEx team for ScriptEngine. Being able to reload the mod withou
 I made this mod with Claude, Anthropic's AI. I ran into the problem while building, worked out what I wanted and tested it in game. Claude dug through the game code to find out why the snap was being refused, and wrote the code and most of the text.
 
 ## Changelog
+
+**1.0.4:** The Wolvy's Mods window now has an About page: click the little "i" next to the X to see my other mods. Snapping works exactly the same as before.
 
 **1.0.3:** The Wolvy's Mods window got a few small fixes. This mod's lines in the BepInEx log now start with [WolvysCrossBeams], so they're easy to spot. Snapping works exactly the same as before.
 

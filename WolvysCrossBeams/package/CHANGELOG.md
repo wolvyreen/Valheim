@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.4 (2026-11-10)
+The Wolvy's Mods window now has an About page: click the little "i" next to the X to see my other mods. Snapping works exactly the same as before.
+
 ## 1.0.3 (2026-11-10)
 The Wolvy's Mods window got a few small fixes. This mod's lines in the BepInEx log now start with [WolvysCrossBeams], so they're easy to spot. Snapping works exactly the same as before.
 

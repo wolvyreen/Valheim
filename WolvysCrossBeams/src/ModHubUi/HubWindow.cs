@@ -406,6 +406,7 @@ namespace WolvyreenModHub
                 if (!string.IsNullOrEmpty(id))
                 {
                     _tab = id;
+                    _about = false;
                     if (!string.IsNullOrEmpty(section))
                         Sections[id] = section;
                 }
@@ -601,6 +602,15 @@ namespace WolvyreenModHub
                 xr.anchoredPosition = new Vector2(tabsTopRight.x - fr.xMax, -((top - below) - xh) / 2f);
                 close.onClick.AddListener(() => Safe(Close));
                 SetTooltip(close.gameObject, "Close", "Close the window (Esc)");
+
+                // (hub 14) "i" left of the X: the About page (all of Wolvyreen's published mods)
+                Button info = TextButton(_frame, "i", _textButtonT, 18);
+                var ir = (RectTransform)info.transform;
+                ir.anchorMin = ir.anchorMax = ir.pivot = new Vector2(1f, 1f);
+                ir.sizeDelta = new Vector2(xh + 4f, xh);
+                ir.anchoredPosition = xr.anchoredPosition - new Vector2(xh + 4f + 8f, 0f);
+                info.onClick.AddListener(() => { _about = !_about; Safe(Fill); });
+                SetTooltip(info.gameObject, "About", "All of my mods: what each one does, whether you have it, and where to get it.");
             }
 
             Vector2 start = _frame.rect.size;
@@ -768,6 +778,95 @@ namespace WolvyreenModHub
             return _gripSprite;
         }
 
+        private static bool _about;   // (hub 14) the About page is showing
+        private static readonly Dictionary<string, Sprite> AboutIcons = new Dictionary<string, Sprite>();
+
+        /// (hub 14) The About page: each of Wolvyreen's published mods (Catalog) with its icon, what it does, whether it
+        /// is installed (and which version), and buttons to its Thunderstore and Nexus pages; GitHub at the bottom.
+        private static void BuildAbout()
+        {
+            RectTransform view = NewRect(_full, "About");
+            Stretch(view, 6f, 6f, 6f, 6f);
+            view.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.001f);   // takes the mouse wheel
+            view.gameObject.AddComponent<RectMask2D>();
+            RectTransform content = HubKit.Column(view, 10f, 8);
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.offsetMin = new Vector2(0f, content.offsetMin.y);
+            content.offsetMax = new Vector2(0f, 0f);
+            content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var scroll = view.gameObject.AddComponent<ScrollRect>();
+            scroll.content = content;
+            scroll.viewport = view;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30f;
+
+            HubKit.Text(content, "My Valheim mods", 26, HubKit.Gold, heading: true);
+            HubKit.Text(content, "Thanks for using my mods!", 16);
+
+            List<Dictionary<string, object>> installed = Hub.Mods();
+            foreach (Catalog.Mod c in Catalog.Mods)
+            {
+                Dictionary<string, object> have = installed.FirstOrDefault(m => Hub.Get<string>(m, "id") == c.Id);
+                RectTransform row = HubKit.Row(content, 16f, -1f);
+                row.gameObject.AddComponent<Image>().color = HubKit.BoxColour;
+                ((HorizontalLayoutGroup)row.GetComponent<LayoutGroup>()).padding = new RectOffset(12, 12, 10, 10);
+                ((HorizontalLayoutGroup)row.GetComponent<LayoutGroup>()).childAlignment = TextAnchor.MiddleLeft;
+
+                var icon = NewRect(row, "Icon").gameObject.AddComponent<Image>();
+                icon.sprite = AboutIcon(c);
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+                Layout(icon.gameObject, 72f, 72f);
+
+                RectTransform text = HubKit.Size(HubKit.Column(row, 4f), -1f, -1f, 1f);
+                RectTransform head = HubKit.Row(text, 12f, 28f);
+                HubKit.Text(head, c.Name, 20, HubKit.Gold);
+                string ver = have != null ? Hub.Get<string>(have, "version") : null;
+                HubKit.Text(head, have != null ? "Installed" + (string.IsNullOrEmpty(ver) ? "" : " " + ver) : "Not installed", 15,
+                            have != null ? new Color(0.6f, 0.86f, 0.5f, 1f) : new Color(0.7f, 0.7f, 0.7f, 1f));
+                HubKit.Size(HubKit.Text(text, c.About, 15), -1f, -1f, 1f);
+
+                RectTransform links = HubKit.Column(row, 6f);
+                HubKit.Size(links, 160f);
+                if (!string.IsNullOrEmpty(c.Thunderstore))
+                {
+                    string url = c.Thunderstore;
+                    HubKit.Button(links, "Thunderstore", () => Application.OpenURL(url), 160f, 30f);
+                }
+                if (!string.IsNullOrEmpty(c.Nexus))
+                {
+                    string url = c.Nexus;
+                    HubKit.Button(links, "Nexus Mods", () => Application.OpenURL(url), 160f, 30f);
+                }
+            }
+
+            RectTransform foot = HubKit.Row(content, 12f, 34f);
+            HubKit.Text(foot, "The source code of every mod is on GitHub (MIT licence).", 15);
+            HubKit.Button(foot, "GitHub", () => Application.OpenURL(Catalog.GitHub), 120f, 30f);
+        }
+
+        private static Sprite AboutIcon(Catalog.Mod c)
+        {
+            if (AboutIcons.TryGetValue(c.Id, out Sprite s) && s != null)
+                return s;
+            try
+            {
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+                tex.LoadImage(Convert.FromBase64String(c.IconPng));
+                s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+            }
+            catch
+            {
+                s = Icon();   // the wolf's head
+            }
+            AboutIcons[c.Id] = s;
+            return s;
+        }
+
         /// Shows the whole-window area (true) or the section list and settings list (false).
         private static void WholeWindow(bool on, string modName)
         {
@@ -814,6 +913,23 @@ namespace WolvyreenModHub
                 Object.DestroyImmediate(t.gameObject);
             Resets.Clear();
             ClearFull();
+
+            // (hub 14) the About page: on the whole window, every mod tab clickable (a tab click leaves it)
+            if (_about && _full != null)
+            {
+                _full.gameObject.SetActive(true);
+                Safe(BuildAbout);
+                WholeWindow(true, null);
+                foreach (Dictionary<string, object> m in mods)
+                {
+                    string id = Hub.Get<string>(m, "id");
+                    Button tab = TextButton(_tabs, TabName(Hub.Get<string>(m, "name")), _tabT, 18);
+                    Layout(tab.gameObject, 190f, 40f);
+                    tab.onClick.AddListener(() => { _tab = id; _about = false; Safe(Fill); });
+                }
+                Canvas.ForceUpdateCanvases();
+                return;
+            }
             Dictionary<string, object> mod = mods.FirstOrDefault(m => Hub.Get<string>(m, "id") == _tab);
             var config = mod != null ? Hub.Get<ConfigFile>(mod, "config") : null;
             List<Shown> shown = config != null ? Entries(config) : new List<Shown>();
@@ -855,7 +971,7 @@ namespace WolvyreenModHub
                 Button tab = TextButton(_tabs, TabName(Hub.Get<string>(m, "name")), _tabT, 18);
                 Layout(tab.gameObject, 190f, 40f);
                 tab.interactable = id != _tab;
-                tab.onClick.AddListener(() => { _tab = id; Safe(Fill); });
+                tab.onClick.AddListener(() => { _tab = id; _about = false; Safe(Fill); });
             }
             if (whole)
             {
