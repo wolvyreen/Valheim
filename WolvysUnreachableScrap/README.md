@@ -40,10 +40,6 @@ The easiest place to change them is in game: open your inventory (Tab) and click
 
 **General**
 - `Enabled` (on): turns the whole mod off without uninstalling it.
-- `ReachStuckScrap` (on): the reach fix.
-- `ReachHiddenScrap` (off): also lets you reach stuck bits you can't see, if they're right where your swing lands. That's scrap the game really keeps out of reach, so it's off unless you want it.
-- `LootAtFeet` (on): the loot fix.
-- `JaggedBlocks`: which crypt blocks count as jagged. You shouldn't need to touch this.
 - `DebugText` and `LogDetails` (off): for tracking down problems.
 
 **Scrap Indicator**

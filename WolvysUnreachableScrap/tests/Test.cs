@@ -1,5 +1,5 @@
 // Wolvy's Unreachable Scrap tests. Only this mod's DLL and the game's own DLLs are loaded.
-// 1. Plugin.Clean: game object names to piece names.   2. Blocks.Rebuild/Describe: the JaggedBlocks setting.
+// 1. Plugin.Clean: game object names to piece names.   2. Blocks.Rebuild/Describe: the fixed jagged-block list.
 // 3. Plugin.On: the master switch.   4. Loot.DropCentre: leaves drops alone unless it should move them.
 // 5. The game hooks: Attack.AddHitPoint, the Attack fields read, MineRock5.DamageArea and its single drop spot
 //    (the loot transpiler run on the game's real code), Room.Theme.SunkenCrypt.
@@ -35,7 +35,7 @@ class T {
   // --- identity ---
   Check("plugin id is wolvy.valheim.unreachablescrap", (string)Get(plugin, "Guid") == "wolvy.valheim.unreachablescrap");
   Check("plugin name is Wolvy's Unreachable Scrap", (string)Get(plugin, "PluginName") == "Wolvy's Unreachable Scrap");
-  string def = (string)Get(plugin, "DefaultJagged");
+  string def = (string)Get(plugin, "JaggedList");
   Check("default jagged list has the 1x2 wall", def.Contains("SunkenKit_int_wall_1x2/stone_low"), def);
   Check("default jagged list has the 2x4 wall", def.Contains("SunkenKit_int_wall_2x4/stone"), def);
   Check("scrap pile prefab is mudpile2_frac", (string)Get(plugin, "PileName") == "mudpile2_frac");
@@ -50,39 +50,32 @@ class T {
   Check("Clean: null is empty", C(null) == "");
   Check("Clean: a name that is only brackets stays", C("(3)") == "(3)", C("(3)"));
 
-  // --- Blocks.Rebuild / Describe (the JaggedBlocks setting) ---
-  var jagged = cfg.Bind("General", "JaggedBlocks", def, "");
-  Set(plugin, "JaggedBlocks", jagged);
+  // --- only Enabled, DebugText and LogDetails under General (Wolvyreen, 2026-11-10) ---
+  foreach (var gone in new[] { "ReachStuckScrap", "ReachHiddenScrap", "LootAtFeet", "JaggedBlocks" })
+   Check("no " + gone + " setting", plugin.GetField(gone, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic) == null);
+  foreach (var kept in new[] { "Enabled", "DebugText", "LogDetails" })
+   Check(kept + " setting is there", plugin.GetField(kept, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic) != null);
+
+  // --- Blocks.Rebuild / Describe (the fixed jagged-block list) ---
   Set(plugin, "LogDetails", cfg.Bind("General", "LogDetails", false, ""));
-  Func<string> D = () => { Call(blocks, "Rebuild"); return (string)Call(blocks, "Describe"); };
-  var pairs = D().Split(new[] { ", " }, StringSplitOptions.None);
-  Check("default list: 3 blocks (two walls + floor)", pairs.Length == 3, string.Join(" | ", pairs));
+  Call(blocks, "Rebuild");
+  var pairs = ((string)Call(blocks, "Describe")).Split(new[] { ", " }, StringSplitOptions.None);
+  Check("jagged blocks: 3 (two walls + floor)", pairs.Length == 3, string.Join(" | ", pairs));
   Check("the floor always counts", pairs.Contains("SunkenKit_int_floor_4x4/stone"));
-  jagged.Value = "";
-  Check("empty list: only the floor", D() == "SunkenKit_int_floor_4x4/stone", D());
-  jagged.Value = "  A / b ,C/d,bad,/x,y/, ,A/b";
-  pairs = D().Split(new[] { ", " }, StringSplitOptions.None);
-  Check("spaces trimmed, bad entries skipped, duplicates once", pairs.Length == 3 && pairs.Contains("A/b") && pairs.Contains("C/d"), string.Join(" | ", pairs));
-  jagged.Value = def;
-  Check("back to the default list", D().Split(new[] { ", " }, StringSplitOptions.None).Length == 3);
+  Check("the 1x2 wall counts", pairs.Contains("SunkenKit_int_wall_1x2/stone_low"));
+  Check("the 2x4 wall counts", pairs.Contains("SunkenKit_int_wall_2x4/stone"));
 
   // --- Plugin.On (master switch) ---
   var enabled = cfg.Bind("General", "Enabled", true, "");
-  var reach = cfg.Bind("General", "ReachStuckScrap", true, "");
   Set(plugin, "Enabled", enabled);
-  Func<ConfigEntry<bool>, bool> On = e => (bool)Call(plugin, "On", e);
-  Check("On: enabled and on", On(reach));
-  reach.Value = false; Check("On: setting off", !On(reach)); reach.Value = true;
-  enabled.Value = false; Check("On: mod disabled turns every part off", !On(reach)); enabled.Value = true;
-  Check("On: null setting is off", !On((ConfigEntry<bool>)null));
+  Func<bool> On = () => (bool)Call(plugin, "On");
+  Check("On: mod enabled", On());
+  enabled.Value = false; Check("On: mod disabled turns every part off", !On()); enabled.Value = true;
 
   // --- Loot.DropCentre leaves drops where the game puts them unless it should move them ---
-  var lootAtFeet = cfg.Bind("General", "LootAtFeet", true, "");
-  Set(plugin, "LootAtFeet", lootAtFeet);
   var centre = new Vector3(1f, 3002f, 3f);
   Func<Vector3> Drop = () => (Vector3)Call(loot, "DropCentre", centre, null, null);
   Check("DropCentre: no hit info, drop unchanged", Drop() == centre);
-  lootAtFeet.Value = false; Check("DropCentre: LootAtFeet off, drop unchanged", Drop() == centre); lootAtFeet.Value = true;
   enabled.Value = false; Check("DropCentre: mod disabled, drop unchanged", Drop() == centre); enabled.Value = true;
 
   // --- the game code the mod hooks (this game version) ---

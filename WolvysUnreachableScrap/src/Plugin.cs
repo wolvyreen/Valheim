@@ -11,9 +11,9 @@
 //   m_hitEffectAreaCenter = true), which for a stuck bit is inside the rock, so the loot can fall out of the dungeon.
 //
 // Fix 1 (reach): a prefix on Attack.AddHitPoint. ONLY when ALL of these hold: the swing landed on a jagged block
-//   (setting JaggedBlocks, plus the crypt floor SunkenKit_int_floor_4x4/stone, always) in a Sunken Crypt room, the
+//   (the 1x2 and 2x4 wall pieces and the crypt floor; a fixed list, no setting) in a Sunken Crypt room, the
 //   local player is swinging a pickaxe inside a dungeon, and a mudpile2_frac bit is under the crosshair (only scrap you
-//   can see counts, unless ReachHiddenScrap is on): the hit is handed to that bit instead, with the same arguments
+//   can see counts; scrap hidden behind rock stays out of reach): the hit is handed to that bit instead, with the same arguments
 //   vanilla would pass for a direct hit on it. The game then damages it the normal way (MineRock5.Damage -> RPC to the
 //   pile's owner), so damage, tool tier and loot are vanilla and it works on servers without the mod.
 // Fix 2 (loot): a transpiler on MineRock5.DamageArea wraps the drop centre (the value read just before
@@ -56,17 +56,14 @@ namespace WolvysUnreachableScrap
 
         internal const string PileName = "mudpile2_frac";
         // found in game: 1x2 on 2026-11-08 at two stuck piles; 2x4 on 2026-11-09 (dozens of swings at stuck scrap landed on it)
-        internal const string DefaultJagged = "SunkenKit_int_wall_1x2/stone_low, SunkenKit_int_wall_2x4/stone";
+        // Fixed list (Wolvyreen, 2026-11-10: players can't know block names, so this is not a setting)
+        internal const string JaggedList = "SunkenKit_int_wall_1x2/stone_low, SunkenKit_int_wall_2x4/stone";
         internal const string FloorBlock = "SunkenKit_int_floor_4x4/stone";       // the crypt floor next to stuck piles
         internal const float CrosshairReach = 4.0f;  // metres past the chest for the crosshair bit
         internal const float DungeonHeight = 3000f;  // dungeons are built above this height (Character.InInterior)
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled;
-        internal static ConfigEntry<bool> ReachStuckScrap;
-        internal static ConfigEntry<bool> ReachHiddenScrap;
-        internal static ConfigEntry<bool> LootAtFeet;
-        internal static ConfigEntry<string> JaggedBlocks;
         internal static ConfigEntry<bool> LogDetails;
         internal static ConfigEntry<bool> HighlightStuckScrap;
         internal static ConfigEntry<bool> DebugText;
@@ -88,29 +85,17 @@ namespace WolvysUnreachableScrap
             Log = Logger;
             Enabled = Config.Bind("General", "Enabled", true,
                 "Turns the whole mod on or off. Off, every swing and every drop is exactly as in the normal game.");
-            ReachStuckScrap = Config.Bind("General", "ReachStuckScrap", true,
-                "Lets your pickaxe hit muddy scrap stuck in the jagged crypt blocks. " +
-                "Only the scrap under your crosshair (where the Muddy Scrap Pile name shows), when your swing lands on a jagged block in front of it; scrap hidden behind rock stays out of reach.");
-            ReachHiddenScrap = Config.Bind("General", "ReachHiddenScrap", false,
-                "Also reaches stuck scrap you can't see. " +
-                "Off: only exposed scrap counts (the bit under your crosshair, and only those are highlighted). On: a swing on a jagged block can also go to the hidden bit closest to where you aim, within 1 m of where the swing lands, and hidden bits you can get close to are highlighted too; that is scrap the normal game keeps out of reach.");
-            LootAtFeet = Config.Bind("General", "LootAtFeet", true,
-                "Drops loot from a buried crypt scrap bit at your feet instead of inside the rock. " +
-                "Only for Sunken Crypt scrap pile bits whose loot would appear behind the crypt's rock; every other drop lands as normal.");
-            JaggedBlocks = Config.Bind("General", "JaggedBlocks", DefaultJagged,
-                "The crypt blocks that trap scrap, as piece/part, separated by commas. " +
-                "Only these blocks are treated as jagged. With LogDetails on, the log names any other crypt block your swing lands on next to scrap, so you can add it here.");
             DebugText = Config.Bind("General", "DebugText", false,
                 "Shows on screen what the stuck scrap indicator is doing, for finding problems. " +
                 "A panel below the hotbar lists each marked scrap bit and why the bit under your crosshair is or isn't marked; on screen, " +
                 "a cyan number marks each bit, yellow + its visible spots and a red * the glint while it is drawn.");
             LogDetails = Config.Bind("General", "LogDetails", false,
                 "Writes each reach and each moved drop to the log. " +
-                "It also names crypt blocks next to scrap that are not in JaggedBlocks, so a block that still traps scrap can be added.");
+                "It also names other crypt blocks your swing lands on next to scrap, which helps when reporting scrap that still can't be reached.");
 
             HighlightStuckScrap = Config.Bind("Scrap Indicator", "ShowIndicator", true,
                 "Shows where stuck crypt scrap is, so you can find it. " +
-                "Only while you hold a pickaxe and are close by, and only for stuck bits you can mine (with ReachHiddenScrap off: bits with some part showing); scrap in the open is left as it is.");
+                "Only while you hold a pickaxe and are close by, and only for stuck bits you can mine (bits with some part showing); scrap in the open is left as it is.");
             Style = Config.Bind("Scrap Indicator", "Style", HighlightStyle.Glint,
                 "How the indicator looks. " +
                 "Glint: now and then a small sparkle flashes on the part of the scrap you can see. Glow: a soft, slowly pulsing glow over the scrap.");
@@ -130,9 +115,7 @@ namespace WolvysUnreachableScrap
 
             SolidAndPileMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "terrain", "piece");
             Blocks.Rebuild();
-            JaggedBlocks.SettingChanged += (s, e) => Blocks.Rebuild();
             LogDetails.SettingChanged += (s, e) => Blocks.Rebuild();
-            ReachHiddenScrap.SettingChanged += (s, e) => Markers.Forget();
 
             _harmony = new Harmony(Guid + "." + System.Guid.NewGuid().ToString("N").Substring(0, 8));
 
@@ -159,7 +142,7 @@ namespace WolvysUnreachableScrap
             _harmony?.UnpatchSelf();
         }
 
-        internal static bool On(ConfigEntry<bool> e) => Enabled != null && Enabled.Value && e != null && e.Value;
+        internal static bool On() => Enabled != null && Enabled.Value;
 
         internal static string Clean(string name)
         {
@@ -184,8 +167,6 @@ namespace WolvysUnreachableScrap
             return room != null && room.m_theme == Room.Theme.SunkenCrypt;
         }
 
-        internal const float NearbyReach = 1.0f;     // ReachHiddenScrap: metres from where the swing landed
-
         internal static Vector3 Chest(Component who) => who.transform.position + Vector3.up * 1.2f;
     }
 
@@ -202,7 +183,7 @@ namespace WolvysUnreachableScrap
         internal static void Rebuild()
         {
             var pairs = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string raw in (Plugin.JaggedBlocks.Value ?? "").Split(','))
+            foreach (string raw in Plugin.JaggedList.Split(','))
             {
                 string p = raw.Trim();
                 int slash = p.IndexOf('/');
@@ -274,15 +255,12 @@ namespace WolvysUnreachableScrap
     internal static class Reach
     {
         private static Func<Attack, object> _character, _weapon, _pickaxeSpecial;
-        private static readonly Collider[] Near = new Collider[64];
         private static bool _failed;
 
         // the crosshair bit, worked out once per swing
         private static Attack _swing;
         private static int _swingFrame = -1;
         private static Collider _swingBit;
-        private static Ray _aim;            // the camera ray of this swing
-        private static bool _haveAim;
 
         internal static bool Patch(Harmony h)
         {
@@ -348,7 +326,7 @@ namespace WolvysUnreachableScrap
         // Always lets the original run; only changes the arguments in the one case described at the top.
         private static void Prefix(Attack __instance, ref GameObject go, ref Collider collider, ref Vector3 point, ref bool multiCollider)
         {
-            if (collider == null || !Plugin.On(Plugin.ReachStuckScrap)) return;
+            if (collider == null || !Plugin.On()) return;
             try
             {
                 if (Plugin.LogDetails.Value) Diagnose(__instance, collider, point);
@@ -361,14 +339,14 @@ namespace WolvysUnreachableScrap
                 if (weapon == null || weapon.m_shared == null || weapon.m_shared.m_skillType != Skills.SkillType.Pickaxes) return;
                 if (who.transform.position.y < Plugin.DungeonHeight) return;
 
-                // only scrap you can see and point at, unless ReachHiddenScrap is on (Wolvyreen, 2026-11-08)
-                Collider bit = CrosshairBit(__instance, who) ?? (Plugin.ReachHiddenScrap.Value ? AimedBit(point) : null);
+                // only scrap you can see and point at; hidden scrap stays out of reach (Wolvyreen, 2026-11-10: no setting)
+                Collider bit = CrosshairBit(__instance, who);
                 if (bit == null) return;
                 if (kind != Blocks.Kind.Jagged)
                 {
                     // A crypt block not in the list (only looked at with LogDetails on): left as normal, but named.
                     Plugin.Log.LogInfo(Plugin.LogTag + "Swing landed on " + Plugin.ParentName(collider) + "/" + collider.name
-                                       + " next to a crypt scrap bit. That block is not in JaggedBlocks, so the swing was left as normal.");
+                                       + " next to a crypt scrap bit. That block is not on the jagged-block list, so the swing was left as normal.");
                     return;
                 }
 
@@ -394,34 +372,15 @@ namespace WolvysUnreachableScrap
         private static Collider CrosshairBit(Attack swing, Component who)
         {
             if (ReferenceEquals(swing, _swing) && Time.frameCount == _swingFrame) return _swingBit;
-            _swing = swing; _swingFrame = Time.frameCount; _swingBit = null; _haveAim = false;
+            _swing = swing; _swingFrame = Time.frameCount; _swingBit = null;
 
             var cam = GameCamera.instance != null ? GameCamera.instance.transform : null;
             if (cam == null) return null;
-            _aim = new Ray(cam.position, cam.forward); _haveAim = true;
-            float range = Vector3.Distance(cam.position, Plugin.Chest(who)) + Plugin.CrosshairReach;
+                        float range = Vector3.Distance(cam.position, Plugin.Chest(who)) + Plugin.CrosshairReach;
             RaycastHit hit;
             if (Physics.Raycast(cam.position, cam.forward, out hit, range, Plugin.SolidAndPileMask, QueryTriggerInteraction.Ignore))
                 _swingBit = Piles.BitOf(hit.collider);
             return _swingBit;
-        }
-
-        /// ReachHiddenScrap only: among the crypt scrap bits within 1 m of where the swing landed, the one closest to
-        /// where you are aiming (the crosshair line). No aim line: the one nearest the swing.
-        private static Collider AimedBit(Vector3 point)
-        {
-            int n = Physics.OverlapSphereNonAlloc(point, Plugin.NearbyReach, Near, Plugin.SolidAndPileMask, QueryTriggerInteraction.Ignore);
-            Collider best = null; float bestScore = float.MaxValue;
-            for (int i = 0; i < n; i++)
-            {
-                var c = Piles.BitOf(Near[i]);
-                if (c == null) continue;
-                if (Vector3.Distance(point, ClosestPoint(c, point)) > Plugin.NearbyReach) continue;
-                Vector3 centre = c.bounds.center;
-                float score = _haveAim ? Vector3.Cross(_aim.direction, centre - _aim.origin).magnitude : Vector3.Distance(point, centre);
-                if (score < bestScore) { best = c; bestScore = score; }
-            }
-            return best;
         }
 
         private static Vector3 ClosestPoint(Collider c, Vector3 p) => Markers.ClosestOn(c, p);
@@ -475,7 +434,7 @@ namespace WolvysUnreachableScrap
 
         public static Vector3 DropCentre(Vector3 centre, MineRock5 rock, HitData hit)
         {
-            if (!Plugin.On(Plugin.LootAtFeet)) return centre;
+            if (!Plugin.On()) return centre;
             try
             {
                 if (hit == null || !Piles.IsCryptPile(rock)) return centre;
@@ -551,8 +510,6 @@ namespace WolvysUnreachableScrap
         private static readonly Collider[] Found = new Collider[1024];
         private static readonly Collider[] Blocking = new Collider[64];
         private static readonly Dictionary<int, bool> Stuck = new Dictionary<int, bool>();     // per bit, cached
-        private static readonly Dictionary<int, bool> Reachable = new Dictionary<int, bool>(); // per bit, cached
-        private static readonly Collider[] Body = new Collider[32];
         private static int _groundMask = -1;
         private static readonly Dictionary<int, Marker> Shown = new Dictionary<int, Marker>(); // per bit
         private static float _nextScan;
@@ -607,7 +564,7 @@ namespace WolvysUnreachableScrap
 
         internal static void Tick()
         {
-            if (!Plugin.On(Plugin.HighlightStuckScrap)) { if (Shown.Count > 0) Clear(); return; }
+            if (!Plugin.On() || !Plugin.HighlightStuckScrap.Value) { if (Shown.Count > 0) Clear(); return; }
             var player = Player.m_localPlayer;
             if (player == null || player.transform.position.y < Plugin.DungeonHeight) { if (Shown.Count > 0) Clear(); return; }
 
@@ -704,9 +661,8 @@ namespace WolvysUnreachableScrap
                 float up = bit.bounds.center.y - player.transform.position.y;
                 if (up < -LowestBelowFeet || up > HighestAboveFeet) continue;
                 if (!IsStuck(bit) && !LowInRock(bit, player)) continue;
-                // hidden scrap counts: a spot to stand within reach of it (worked out once per bit);
-                // exposed scrap only (default): it must be in view from your camera right now (checked every second)
-                if (Plugin.ReachHiddenScrap.Value ? !CanGetTo(bit) : !InViewNow(bit)) continue;
+                // exposed scrap only: it must be in view from your camera right now (checked every second)
+                if (!InViewNow(bit)) continue;
                 want.Add(new KeyValuePair<float, Collider>((bit.bounds.center - chest).sqrMagnitude, bit));
             }
             want.Sort((a, b) => a.Key.CompareTo(b.Key));
@@ -798,7 +754,6 @@ namespace WolvysUnreachableScrap
         /// Checked every scan, as it depends on where you are.
         private static bool LowInRock(Collider bit, Player player)
         {
-            if (Plugin.ReachHiddenScrap.Value) return false;
             if (LowStuck.Contains(bit.GetInstanceID())) return true;
             bool touches;
             if (!Touching.TryGetValue(bit.GetInstanceID(), out touches) || !touches) return false;
@@ -865,59 +820,7 @@ namespace WolvysUnreachableScrap
             return false;
         }
 
-        // Standing spots tried around a bit: rings at these distances (metres, sideways), 12 directions each.
-        private static readonly float[] Rings = { 0.7f, 1.2f, 1.7f, 2.2f };
-        private const int Directions = 12;
-        private const float BodyRadius = 0.4f, BodyHeight = 1.8f;
-
-        /// Can the player see (point at) part of this bit? True when there is a spot around it with walkable floor and
-        /// room for the player's body from which a straight line reaches the bit itself first, within 3 m of the eye.
-        /// Worked out once per bit (the rock never moves).
-        /// An estimate: it doesn't know whether that spot is connected to where the player is.
-        private static bool CanGetTo(Collider bit)
-        {
-            int id = bit.GetInstanceID();
-            bool yes;
-            if (Reachable.TryGetValue(id, out yes)) return yes;
-            if (_groundMask == -1) _groundMask = LayerMask.GetMask("static_solid", "Default", "Default_small", "terrain", "piece");
-
-            Vector3 c = bit.bounds.center;
-            yes = false;
-            for (int r = 0; r < Rings.Length && !yes; r++)
-                for (int d = 0; d < Directions && !yes; d++)
-                {
-                    float a = d * Mathf.PI * 2f / Directions;
-                    Vector3 above = c + new Vector3(Mathf.Cos(a) * Rings[r], 2.6f, Mathf.Sin(a) * Rings[r]);
-                    // the floor under this spot: within 0.6 m above to 2.5 m below the bit (the marker height range)
-                    RaycastHit ground;
-                    if (!Physics.Raycast(above, Vector3.down, out ground, 5.3f, _groundMask, QueryTriggerInteraction.Ignore)) continue;
-                    if (ground.normal.y < 0.7f || IsPile(ground.collider)) continue;
-                    float feetY = ground.point.y;
-                    if (c.y - feetY < -LowestBelowFeet || c.y - feetY > HighestAboveFeet) continue;
-                    Vector3 feet = ground.point;
-                    // room for the body
-                    Vector3 low = feet + Vector3.up * (BodyRadius + 0.05f), high = feet + Vector3.up * (BodyHeight - BodyRadius);
-                    int n = Physics.OverlapCapsuleNonAlloc(low, high, BodyRadius, Body, _groundMask, QueryTriggerInteraction.Ignore);
-                    bool blocked = false;
-                    for (int i = 0; i < n && !blocked; i++) if (Body[i] != null && !IsPile(Body[i])) blocked = true;
-                    if (blocked) continue;
-                    if (Plugin.ReachHiddenScrap.Value)
-                    {
-                        // hidden scrap counts: within swing reach, and only the last metre may be rock
-                        if (HiddenReachFrom(bit, feet + Vector3.up * 1.2f)) yes = true;
-                    }
-                    // exposed scrap only: some part of the bit can be seen (pointed at) from here, within reach
-                    else if (CanSeeFrom(bit, feet + Vector3.up * EyeHeight)) yes = true;
-                }
-            if (Reachable.Count > 8192) Reachable.Clear();
-            Reachable[id] = yes;
-            if (!yes && Plugin.LogDetails.Value)
-                Plugin.Log.LogInfo(Plugin.LogTag + "No glow for stuck scrap bit " + bit.name + (Plugin.ReachHiddenScrap.Value
-                    ? ": no spot to stand within reach of it." : ": no part of it can be seen from a spot you can stand."));
-            return yes;
-        }
-
-        /// Exposed-scrap mode: true while a straight line from your camera reaches some part of this bit before any
+        /// True while a straight line from your camera reaches some part of this bit before any
         /// rock, within HighlightDistance. Checked again every scan, so a bit that goes out of view stops glowing.
         private static bool InViewNow(Collider bit)
         {
@@ -928,24 +831,6 @@ namespace WolvysUnreachableScrap
 
         private static bool IsPile(Collider c) => c != null && c.GetComponentInParent<MineRock5>() != null;
 
-        private const float SwingReach = 2.2f;   // chest to the bit's surface: about a pickaxe swing
-
-        /// ReachHiddenScrap: the bit is within swing reach of the chest and nothing solid is in between except within
-        /// the last 1 m (the part the reach fix covers with ReachHiddenScrap on).
-        private static bool HiddenReachFrom(Collider bit, Vector3 chest)
-        {
-            Vector3 target = ClosestOn(bit, chest);
-            float len = Vector3.Distance(chest, target);
-            if (len > SwingReach) return false;
-            if (len < 0.01f) return true;
-            Vector3 dir = (target - chest) / len;
-            float firstSolid = len;
-            foreach (var h in Physics.RaycastAll(chest, dir, len, _groundMask, QueryTriggerInteraction.Ignore))
-                if (h.collider != null && !IsPile(h.collider) && h.distance < firstSolid) firstSolid = h.distance;
-            return len - firstSolid <= Plugin.NearbyReach;
-        }
-
-        private const float EyeHeight = 1.6f;
         private const float PointReach = 3.0f;   // eye to the bit's surface: about how far the crosshair names scrap
 
         /// True when a straight line from the eye to some part of the bit meets this bit first (no rock or other
@@ -1153,8 +1038,8 @@ namespace WolvysUnreachableScrap
             else if (Vector3.Distance(Plugin.Chest(player), bit.bounds.center) > Plugin.HighlightDistance.Value + ScanBeyondRange) why = "too far away";
             else if (up < -LowestBelowFeet || up > HighestAboveFeet) why = "not at your level (" + up.ToString("0.0") + " m from your feet)";
             else if (!IsStuck(bit) && !LowInRock(bit, player)) why = "not stuck (" + Mathf.RoundToInt(BuriedShare(bit) * 100f) + "% in rock, and a swing can get to it; top " + TopAboveFloor(bit).ToString("0.00") + " m above the floor, scrap on it: " + (ScrapAbove(bit) ? "yes" : "no") + "; blocks it touches: " + TouchingBlocks(bit) + ")";
-            else if (Plugin.ReachHiddenScrap.Value ? !CanGetTo(bit) : !InViewNow(bit))
-                why = Plugin.ReachHiddenScrap.Value ? "stuck, but no spot to stand within reach of it" : "stuck, but no line from your camera reaches it before rock";
+            else if (!InViewNow(bit))
+                why = "stuck, but no line from your camera reaches it before rock";
             else why = "not among the nearest " + MaxMarkers;
             _crosshairWhy = ShortName(bit) + ": " + why;
             if (!Plugin.LogDetails.Value) return;
@@ -1243,8 +1128,7 @@ namespace WolvysUnreachableScrap
             return new Marker { Bit = bit, Edges = go, Mat = mat };
         }
 
-        /// The spots on the bit a glint can appear: where a line from your camera meets the bit itself (exposed scrap),
-        /// or, with ReachHiddenScrap on, also the side of the bit facing you.
+        /// The spots on the bit a glint can appear: where a line from your camera meets the bit itself.
         private static void UpdatePoints(Marker m, Player player)
         {
             m.Points.Clear();
@@ -1265,7 +1149,6 @@ namespace WolvysUnreachableScrap
                     }
                 }
             }
-            if (m.Points.Count == 0 && Plugin.ReachHiddenScrap.Value) m.Points.Add(ClosestOn(m.Bit, Plugin.Chest(player)));
         }
 
         /// How much brighter a glint at this distance must be to look the same through the fog. The game's fog mixes
@@ -1350,13 +1233,12 @@ namespace WolvysUnreachableScrap
             _nextScan = 0f;
         }
 
-        /// The jagged block list changed: work out again which bits are stuck.
+        /// Work out again which bits are stuck (the block list changed, e.g. LogDetails switched on).
         internal static void Forget()
         {
             Stuck.Clear();
             Touching.Clear();
             LowStuck.Clear();
-            Reachable.Clear();
             Samples.Clear();
             Clear();
         }
