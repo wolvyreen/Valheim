@@ -1,0 +1,21 @@
+{
+  "thunderstore": {
+    "team": "Wolvyreen",
+    "package": "Wolvys_Unreachable_Scrap",
+    "community": "valheim",
+    "categories": [
+      "AI Generated",
+      "Tweaks",
+      "Client-side",
+      "Mods",
+      "Deep North Update"
+    ]
+  },
+  "nexus": {
+    "mod_id": 0,
+    "mod_uid": 0,
+    "file_id": 0,
+    "display_name": "Wolvys Unreachable Scrap",
+    "file_description": "Use Mod Manager Download, or extract the zip into your Valheim folder (the one with valheim.exe). Needs BepInEx for Valheim."
+  }
+}
