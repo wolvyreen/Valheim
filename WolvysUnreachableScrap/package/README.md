@@ -57,7 +57,7 @@ If a Valheim update changes the game code this mod hooks into, it writes a note 
 
 ## Installing
 
-Download it from Thunderstore or Nexus Mods.
+Download it from [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Unreachable_Scrap/) or [Nexus Mods](https://www.nexusmods.com/valheim/mods/4931).
 
 **r2modman or Thunderstore Mod Manager:** hit Install and you're done. It sets up BepInEx for you if you don't have it.
 
@@ -90,5 +90,7 @@ Thanks to the BepInEx team for ScriptEngine. Being able to reload the mod withou
 I made this mod with Claude, Anthropic's AI. I kept running into scrap I couldn't mine, worked out what I wanted and tested it in game, crypt after crypt. Claude dug through the game code to find out why the swings were missing, and wrote the code and most of the text.
 
 ## Changelog
+
+**1.0.1:** The About page in the Wolvy's Mods window now has a Nexus Mods button for this mod.
 
 **1.0.0:** First release.

@@ -12,9 +12,9 @@
     ]
   },
   "nexus": {
-    "mod_id": 0,
-    "mod_uid": 0,
-    "file_id": 0,
+    "mod_id": 4931,
+    "mod_uid": 15749645079363,
+    "file_id": 8356431,
     "display_name": "Wolvys Unreachable Scrap",
     "file_description": "Use Mod Manager Download, or extract the zip into your Valheim folder (the one with valheim.exe). Needs BepInEx for Valheim."
   }

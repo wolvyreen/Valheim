@@ -1,6 +1,6 @@
 {
   "name": "Wolvys_Unreachable_Scrap",
-  "version_number": "1.0.0",
+  "version_number": "1.0.1",
   "website_url": "https://github.com/wolvyreen/Valheim/tree/main/WolvysUnreachableScrap",
   "description": "Mine the muddy scrap stuck in Sunken Crypt walls and floors: point at it and swing. A little glint shows you where stuck scrap is, and loot that would fall out of the world drops at your feet instead. Client-side.",
   "dependencies": [
