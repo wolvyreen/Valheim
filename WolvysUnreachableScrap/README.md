@@ -20,8 +20,6 @@ This mod lets you mine those bits. Point your crosshair at the scrap and swing l
 
 ![Glints on stuck scrap](https://raw.githubusercontent.com/wolvyreen/Valheim/main/WolvysUnreachableScrap/images/glints.jpg)
 
-![Stuck scrap glints and can now be reached](https://raw.githubusercontent.com/wolvyreen/Valheim/main/WolvysUnreachableScrap/images/glints-and-reach.jpg)
-
 ## Made to feel like normal mining
 
 I wanted this mod to stay out of your way as much as possible, so mining stuck scrap feels just like mining any other scrap and not like cheating. There's no new key, nothing to switch on and nothing to aim differently. You point, you swing, and the scrap breaks the way the game would break it if the rock weren't in the way, with the same damage, tool tier and loot. It doesn't reach through walls or touch scrap you can't see, and the glint is small and only shows while you're holding a pickaxe. I'm happy with how it turned out: in the crypt it just feels like the game working the way it should.
@@ -69,7 +67,9 @@ Download it from Thunderstore or Nexus Mods.
 
 ## Compatibility with other mods
 
-It only changes what happens when you swing a pickaxe at muddy scrap in the Sunken Crypts, so it should sit happily next to your other mods. If you find one it doesn't get along with, let me know and I'll have a look.
+It only changes what happens when you swing a pickaxe at muddy scrap in the Sunken Crypts, so it should sit happily next to your other mods.
+
+If you find one it doesn't get along with, let me know and I'll have a look.
 
 ## My other mods
 
