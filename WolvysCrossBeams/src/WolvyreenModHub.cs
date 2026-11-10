@@ -47,7 +47,7 @@ namespace WolvyreenModHub
         ///    (Drop Counters 2.12.2).
         /// 9: reset arrow left of the control, slider value left of the slider: controls line up on the right (Drop Counters 2.12.3).
         /// 10: setting lines stretch with the window again (line too); slider bars, drop-downs and text boxes one width (Drop Counters 2.12.4).
-        internal const int HubVersion = 10;
+        internal const int HubVersion = 13;
         internal const string ListKey = "Wolvyreen.ModHub.1";
         /// (hub 3) The copy that draws puts its "open the window at this mod's tab" action here (Action&lt;string, string&gt;:
         /// mod id, section or null), so any mod can open the window at its own tab, whichever copy draws.

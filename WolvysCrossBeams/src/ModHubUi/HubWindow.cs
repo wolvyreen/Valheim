@@ -278,10 +278,27 @@ namespace WolvyreenModHub
 
         /// Spaces the visible buttons of the row (Texts, Skills, Trophies, ..., ours last) evenly, centred on the
         /// board. Done on every inventory opening, so nothing another mod did before (or a button hidden) leaves a gap.
+        private static bool _rowLogged;
+
         private static void LayoutRow(Transform parent)
         {
             var board = parent as RectTransform;
             var mine = _button != null ? (RectTransform)_button.transform : null;
+            // (hub 13) a hub button left by another copy (a reload or a hand-over) is not ours: remove it, so it can't
+            // hold a place in the row
+            foreach (Transform t in parent.Cast<Transform>().ToList())
+                if (t.name == "WolvyreenModHubButton" && (mine == null || t != mine.transform))
+                {
+                    t.gameObject.SetActive(false);
+                    Object.Destroy(t.gameObject);
+                }
+            if (!_rowLogged)
+            {
+                _rowLogged = true;
+                Hub.Log?.LogInfo("Mod hub button row: " + string.Join(", ", parent.Cast<Transform>().Select(t =>
+                    t.name + (t.gameObject.activeSelf ? "" : " (hidden)") + " @" + Mathf.RoundToInt(t.localPosition.x)
+                    + (t.GetComponent<Button>() != null || t.GetComponent<Toggle>() != null ? "" : " (not a button)")).ToArray()) + ".");
+            }
             List<RectTransform> row = parent.Cast<Transform>()
                 .Where(t => t != mine && t.gameObject.activeSelf && (t.GetComponent<Button>() != null || t.GetComponent<Toggle>() != null))
                 .Cast<RectTransform>().OrderBy(t => t.localPosition.x).ToList();
@@ -1051,6 +1068,7 @@ namespace WolvyreenModHub
             Slider s = Copy(_sliderT, row);
             foreach (TMP_Text label in s.GetComponentsInChildren<TMP_Text>(true))
                 label.text = "";
+            HubKit.OnlyBarTakesClicks(s);   // (hub 11)
             s.onValueChanged = new Slider.SliderEvent();
             s.minValue = min;
             s.maxValue = max;

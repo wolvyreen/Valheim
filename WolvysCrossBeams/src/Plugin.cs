@@ -38,12 +38,15 @@ namespace WolvysCrossBeams
     {
         public const string Guid = "wolvy.valheim.crossbeams";
         public const string PluginName = "Wolvy's Cross Beams";
-        public const string PluginVersion = "1.0.2";
+        public const string PluginVersion = "1.0.3";
         public const string PluginAuthor = "Wolvyreen(With_ClaudeAI)";
 
         // The same limits the game uses
         internal const float SamePlace = 0.05f;    // metres: vanilla's "same spot" distance
         internal const float RotatedAllowance = 10f; // degrees: vanilla's m_allowRotatedOverlap angle
+
+        // Every log line this mod writes starts with this tag (Wolvyreen's rule for all mods, 2026-11-10)
+        internal const string LogTag = "[WolvysCrossBeams] ";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled;
@@ -68,7 +71,7 @@ namespace WolvysCrossBeams
 
             // Wolvyreen's mod hub: this mod's tab in the shared "Wolvy's Mods" window (every setting is bound by now)
             try { WolvyreenModHub.Hub.Register(Guid, PluginName, PluginVersion, Config, Logger, _harmony); }
-            catch (Exception e) { Log.LogWarning("Mod hub: could not add Wolvy's Cross Beams: " + e.Message); }
+            catch (Exception e) { Log.LogWarning(LogTag + "Mod hub: could not add Wolvy's Cross Beams: " + e.Message); }
 
             Type playerType = AccessTools.TypeByName("Player");
             _pieceType = AccessTools.TypeByName("Piece");
@@ -81,16 +84,16 @@ namespace WolvysCrossBeams
                 || ps[2].ParameterType != typeof(string) || ps[4].ParameterType != typeof(bool)
                 || _ghostField == null || _getSnapPoints == null)
             {
-                Log.LogError(PluginName + " " + PluginVersion + ": Player.IsOverlappingOtherPiece / Piece.GetSnapPoints not found or changed in this game version; nothing patched (vanilla snapping).");
+                Log.LogError(LogTag + PluginName + " " + PluginVersion + ": Player.IsOverlappingOtherPiece / Piece.GetSnapPoints not found or changed in this game version; nothing patched (vanilla snapping).");
                 return;
             }
             _harmony.Patch(target, prefix: new HarmonyMethod(typeof(Plugin), nameof(OverlapPrefix)));
-            Log.LogInfo(PluginName + " " + PluginVersion + " loaded: crossed pieces can snap, real duplicates are still refused.");
+            Log.LogInfo(LogTag + PluginName + " " + PluginVersion + " loaded: crossed pieces can snap, real duplicates are still refused.");
         }
 
         private void OnDestroy()
         {
-            try { WolvyreenModHub.Hub.Unregister(); } catch (Exception e) { Log?.LogWarning("Mod hub: " + e.Message); }
+            try { WolvyreenModHub.Hub.Unregister(); } catch (Exception e) { Log?.LogWarning(LogTag + "Mod hub: " + e.Message); }
             _harmony?.UnpatchSelf();
         }
 
@@ -132,7 +135,7 @@ namespace WolvysCrossBeams
             }
             catch (Exception e)
             {
-                if (!_failedOnce) { _failedOnce = true; Log.LogWarning("Overlap check failed, using vanilla's: " + e); }
+                if (!_failedOnce) { _failedOnce = true; Log.LogWarning(LogTag + "Overlap check failed, using vanilla's: " + e); }
                 return true;
             }
         }

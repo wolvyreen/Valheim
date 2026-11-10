@@ -198,6 +198,7 @@ namespace WolvyreenModHub
             Slider s = HubWindow.Copy(HubWindow._sliderT, parent);
             foreach (TMP_Text label in s.GetComponentsInChildren<TMP_Text>(true))
                 label.text = "";
+            OnlyBarTakesClicks(s);
             s.onValueChanged = new UnityEngine.UI.Slider.SliderEvent();
             s.minValue = min;
             s.maxValue = max;
@@ -211,6 +212,23 @@ namespace WolvyreenModHub
                 HubWindow.Safe(() => changed(v));
             });
             return s;
+        }
+
+        /// (hub 11) Only the slider's own bar may take a click. The game's Settings slider carries its (emptied) label
+        /// beside the bar, and that label still caught clicks: in the colour picker it lay over the wheel, so a click
+        /// on the wheel moved Brightness or Opacity instead of picking the colour.
+        internal static void OnlyBarTakesClicks(Slider s)
+        {
+            foreach (Graphic g in s.GetComponentsInChildren<Graphic>(true))
+                g.raycastTarget = false;
+            Graphic hit = s.GetComponent<Graphic>();
+            if (hit == null)
+            {
+                var img = s.gameObject.AddComponent<Image>();
+                img.color = new Color(0f, 0f, 0f, 0f);
+                hit = img;
+            }
+            hit.raycastTarget = true;
         }
 
         internal static TMP_Dropdown Dropdown(Transform parent, List<string> options, int index, Action<int> changed, float width = 260f)
@@ -238,12 +256,38 @@ namespace WolvyreenModHub
         }
 
         /// The game's drop-down comes with its Settings label beside it; only the box stays, in readable text.
+        private static bool _dropLogged;
+
         internal static TMP_Dropdown CleanDropdown(TMP_Dropdown d)
         {
             foreach (TMP_Text t in d.GetComponentsInChildren<TMP_Text>(true))
             {
                 if (t == d.captionText || t == d.itemText)
+                {
+                    // (hub 12/13) the game's drop-down text sizes itself to fit a box shorter than its line, so in ours
+                    // it came out tiny (hub 12's fixed size with Ellipsis then showed nothing): a fixed size, on one
+                    // line, always drawn, centred on the box's middle
+                    if (!_dropLogged)
+                    {
+                        _dropLogged = true;
+                        Hub.Log?.LogInfo($"Mod hub drop-down text: '{t.name}' box {t.rectTransform.rect.size}, autosize {t.enableAutoSizing} " +
+                                         $"({t.fontSizeMin}-{t.fontSizeMax}), overflow {t.overflowMode}, parent '{t.transform.parent?.name}'.");
+                    }
+                    t.enableAutoSizing = false;
                     t.fontSize = 16;
+                    t.textWrappingMode = TextWrappingModes.NoWrap;
+                    t.overflowMode = TextOverflowModes.Overflow;
+                    t.alignment = t == d.captionText ? TextAlignmentOptions.Center : TextAlignmentOptions.Left;
+                    if (t == d.captionText)
+                    {
+                        RectTransform r = t.rectTransform;   // the whole box, less room for the arrow
+                        r.SetParent(d.transform, false);
+                        r.anchorMin = Vector2.zero;
+                        r.anchorMax = Vector2.one;
+                        r.offsetMin = new Vector2(10f, 0f);
+                        r.offsetMax = new Vector2(-10f, 0f);
+                    }
+                }
                 else if (d.template == null || !t.transform.IsChildOf(d.template))
                     t.gameObject.SetActive(false);
             }
@@ -422,8 +466,10 @@ namespace WolvyreenModHub
             // (hub 10) at least SettingWidth wide, and as wide as the window's list: the row and the line under it both
             // stretch, so a bigger window gives the name and description more room and the controls stay at the end of
             // the line (hub 8 had kept both at SettingWidth)
-            HubWindow.Layout(row.gameObject, SettingWidth, 54f).flexibleWidth = 1f;
-            row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(12, 8, 6, 6);
+            LayoutElement rowSize = HubWindow.Layout(row.gameObject, SettingWidth, 54f);
+            rowSize.flexibleWidth = 1f;
+            rowSize.preferredHeight = -1f;   // (hub 13) at least 54 high, taller when the description takes two lines
+            row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(12, 8, 6, 9);
             RectTransform left = Column(row, 2f);
             Size(left, 300f, -1f, 1f);
             TMP_Text n = Text(left, name, 17);
