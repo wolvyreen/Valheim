@@ -8,6 +8,7 @@ Every mod has its own folder here with the source code, tests, build scripts, RE
 |---|---|---|
 | [Wolvy's Cross Beams - Snapping Fix for X Beams](WolvysCrossBeams/) | Lets you snap two of the same angled beam into an X. Vanilla refuses the second one; with this it clicks into place. Real duplicates are still blocked. | [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Cross_Beams/) · [Nexus](https://www.nexusmods.com/valheim/mods/4876) |
 | [Wolvy's Unreachable Scrap - Mine Stuck Scrap in Sunken Crypts](WolvysUnreachableScrap/) | Lets you mine the muddy scrap stuck in Sunken Crypt walls and floors: point at it and swing. A little glint shows you where it is. | [Thunderstore](https://thunderstore.io/c/valheim/p/Wolvyreen/Wolvys_Unreachable_Scrap/) · Nexus (coming soon) |
+
 More will show up here as I release them.
 
 ## Installing
