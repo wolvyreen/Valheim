@@ -6,7 +6,7 @@
     <Nullable>disable</Nullable>
     <AssemblyName>WolvysCrossBeams</AssemblyName>
     <RootNamespace>WolvysCrossBeams</RootNamespace>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Authors>Wolvyreen(With_ClaudeAI)</Authors>
     <!-- Version, title and author come from src/AssemblyInfo.cs. -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

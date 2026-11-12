@@ -38,7 +38,7 @@ namespace WolvysCrossBeams
     {
         public const string Guid = "wolvy.valheim.crossbeams";
         public const string PluginName = "Wolvy's Cross Beams";
-        public const string PluginVersion = "1.0.4";
+        public const string PluginVersion = "1.0.5";
         public const string PluginAuthor = "Wolvyreen(With_ClaudeAI)";
 
         // The same limits the game uses

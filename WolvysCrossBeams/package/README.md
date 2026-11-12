@@ -78,6 +78,8 @@ I made this mod with Claude, Anthropic's AI. I ran into the problem while buildi
 
 ## Changelog
 
+**1.0.5:** The wolf's head button in your inventory now just says "Wolvy's Mods" when you hover over it.
+
 **1.0.4:** The Wolvy's Mods window now has an About page: click the little "i" next to the X to see my other mods. Snapping works exactly the same as before.
 
 **1.0.3:** The Wolvy's Mods window got a few small fixes. This mod's lines in the BepInEx log now start with [WolvysCrossBeams], so they're easy to spot. Snapping works exactly the same as before.

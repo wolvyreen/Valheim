@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.5 (2026-11-12)
+The wolf's head button in your inventory now just says "Wolvy's Mods" when you hover over it.
+
 ## 1.0.4 (2026-11-10)
 The Wolvy's Mods window now has an About page: click the little "i" next to the X to see my other mods. Snapping works exactly the same as before.
 
