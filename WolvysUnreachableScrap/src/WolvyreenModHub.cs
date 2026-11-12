@@ -50,7 +50,7 @@ namespace WolvyreenModHub
         /// 11-13: slider clicks, drop-down text, setting rows grow, stray hub buttons removed (Unreachable Scrap 0.9.x).
         /// 14: About page (an "i" button left of the X): Wolvyreen's published mods from Catalog, installed or not, with
         ///     Thunderstore / Nexus / GitHub buttons (Unreachable Scrap 1.0.0).
-        internal const int HubVersion = 15;
+        internal const int HubVersion = 16;
         internal const string ListKey = "Wolvyreen.ModHub.1";
         /// (hub 3) The copy that draws puts its "open the window at this mod's tab" action here (Action&lt;string, string&gt;:
         /// mod id, section or null), so any mod can open the window at its own tab, whichever copy draws.

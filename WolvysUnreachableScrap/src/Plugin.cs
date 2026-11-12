@@ -50,7 +50,7 @@ namespace WolvysUnreachableScrap
     {
         public const string Guid = "wolvy.valheim.unreachablescrap";
         public const string PluginName = "Wolvy's Unreachable Scrap";
-        public const string PluginVersion = "1.0.1";
+        public const string PluginVersion = "1.0.2";
         public const string PluginAuthor = "Wolvyreen(With_ClaudeAI)";
         internal const string LogTag = "[WolvysUnreachableScrap] ";   // every log line starts with it (build rule 10)
 

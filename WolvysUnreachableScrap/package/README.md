@@ -91,6 +91,8 @@ I made this mod with Claude, Anthropic's AI. I kept running into scrap I couldn'
 
 ## Changelog
 
+**1.0.2:** The wolf's head button in your inventory now just says "Wolvy's Mods" when you hover over it.
+
 **1.0.1:** The About page in the Wolvy's Mods window now has a Nexus Mods button for this mod.
 
 **1.0.0:** First release.

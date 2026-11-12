@@ -1,7 +1,7 @@
 // Wolvyreen Mod Hub - the window (shared: the same file, unchanged, goes into every one of Wolvyreen's mods)
 //
 // ONE button in the inventory, shared by all of Wolvyreen's mods (a copy of the game's Trophies button
-// with a wolf's head; it takes the place Wolvy's Drop Counters' own button had) opens a window in the
+// with a wolf's head) opens a window in the
 // inventory screen, like the game's Trophies window. It is a copy of that window: the same wood frame,
 // title, close button and scroll list. Along the top is a tab for each of Wolvyreen's mods that is
 // installed; a tab shows that mod's settings, grouped by section, with controls copied from the game's
@@ -63,8 +63,6 @@ namespace WolvyreenModHub
         private static readonly List<KeyValuePair<RectTransform, Vector2>> Moved = new List<KeyValuePair<RectTransform, Vector2>>();
         internal static readonly List<TMP_InputField> Fields = new List<TMP_InputField>();
         private static Sprite _icon;
-        private static GameObject _legacy;   // Wolvy's Drop Counters' own button (from before the hub): hidden, there is one button for all
-        private const string LegacyButton = "WolvysDropCountersButton";
         private static bool _failedOnce, _reported;
 
         // (hub 4) resizing and whole-window sections
@@ -142,7 +140,7 @@ namespace WolvyreenModHub
             MethodInfo update = AccessTools.Method(gui, "Update");
             if (_trophiesPanel == null || show == null || hide == null || update == null)
                 return false;
-            // last, so other mods' inventory buttons (Drop Counters') already exist when ours is placed
+            // last, so any other inventory buttons already exist when ours is placed
             harmony.Patch(show, postfix: new HarmonyMethod(typeof(HubWindow), nameof(ShowPostfix)) { priority = Priority.Last });
             harmony.Patch(hide, postfix: new HarmonyMethod(typeof(HubWindow), nameof(HidePostfix)));
             harmony.Patch(update, prefix: new HarmonyMethod(typeof(HubWindow), nameof(UpdatePrefix)));
@@ -229,7 +227,6 @@ namespace WolvyreenModHub
             {
                 if (trophies != null)
                 {
-                    HideLegacy(trophies.transform.parent);
                     LayoutRow(trophies.transform.parent);
                 }
                 return;
@@ -245,7 +242,6 @@ namespace WolvyreenModHub
             b.onClick = new Button.ButtonClickedEvent();
             b.onClick.AddListener(() => Safe(Open));
             _button.transform.SetAsLastSibling();
-            HideLegacy(trophies.transform.parent);
             LayoutRow(trophies.transform.parent);
 
             Image icon = IconOf(trophies);
@@ -260,20 +256,7 @@ namespace WolvyreenModHub
                     img.preserveAspect = true;
                 }
             }
-            SetTooltip(_button, Title, "Settings for each of Wolvyreen's mods installed");
-        }
-
-        /// One button for all: Drop Counters (a version from before the hub) adds its own; hide it every time.
-        private static void HideLegacy(Transform row)
-        {
-            if (row == null)
-                return;
-            Transform legacy = row.Find(LegacyButton);
-            if (legacy == null)
-                return;
-            _legacy = legacy.gameObject;
-            if (_legacy.activeSelf)
-                _legacy.SetActive(false);
+            SetTooltip(_button, Title, Title);   // (hub 16) just "Wolvy's Mods"
         }
 
         /// Spaces the visible buttons of the row (Texts, Skills, Trophies, ..., ours last) evenly, centred on the
@@ -1543,9 +1526,6 @@ namespace WolvyreenModHub
                 if (kv.Key != null)
                     kv.Key.anchoredPosition = kv.Value;
             Moved.Clear();
-            if (_legacy != null && _legacy)
-                _legacy.SetActive(true);   // Drop Counters keeps a way in when this window goes
-            _legacy = null;
             if (_button != null)
                 Object.Destroy(_button);
             if (_panel != null)
